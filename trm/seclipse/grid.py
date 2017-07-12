@@ -1,6 +1,10 @@
-"""
-Implements an alternative but slower way to calculate sphere eclipses
-in which the visible faces of the stars are spliy into small elements.
+"""Calculates the eclipse of limb darkened spheres by splitting each sphere's
+visible face into a grid of elements arranged in a series of equal increment
+annuli each split into equal angular increments so that they are approximately
+square. This should be compared to the method implemented in the 'rings' set
+of routines.  'grid' is fundamentally 2D but makes better use of numpy's
+vectorised speed up.
+
 """
 
 import sys
@@ -44,6 +48,8 @@ def rfinit(r, limb, n):
     # the # mid-points radially of each annulus.
     halfdr = r/n/2
     radii = np.linspace(halfdr, r-halfdr, n)
+
+    # initially count number of elements needed so arrays can be setup
     ngrid = 0
     for radius in radii:
         ngrid += max(8, int(math.pi*radius/halfdr))
@@ -54,6 +60,7 @@ def rfinit(r, limb, n):
     ngrid = 0
     for radius in radii:
         # compute number of thetas to make elements roughly square
+        # must be same as the equivalent line in the previous loop
         ntheta = max(8, int(math.pi*radius/halfdr))
 
         # compute x, y [on sky] coordinates
@@ -75,128 +82,80 @@ def rfinit(r, limb, n):
 
     return (x, y, f, f.sum())
 
-def flux4(r1, r2, r3, r4, limb1, limb2, limb3, limb4,
-          n1, n2, n3, n4, p1, p2, p3, p4):
-    """Computes flux from each of four limb darkened spheres, each of unit
-    central surface brightness, accounting for their mutual eclipses.
+def flux4(r, rings, fluxes, tflux, x, y, z):
+    """Computes flux from each of four spheres, accounting for their mutual
+    eclipses. All arguments here are array-like with 4 elements each, covering
+    the 4 spheres.
 
     Arguments::
 
-      r1 : (float)
-         radius of sphere 1
+      r       : (list/tuple of floats)
+         radii of spheres [4 values]
 
-      r2 : (float)
-         radius of sphere 2
+      xs      : (list/tuple of arrays)
+         x-ordinates of elements visible faces of each sphere, measured
+         relative to the centre of each face [4 arrays]
 
-      r3 : (float)
-         radius of sphere 3
+      ys      : (list/tuple of arrays)
+         y-ordinates of elements visible faces of each sphere, measured
+         relative to the centre of each face [4 arrays]
 
-      r4 : (float)
-         radius of sphere 4
+      fluxes  : (list/tuple of arrays)
+         arrays of flux contributions from the annuli covering each
+         sphere. This allows limb darkening to be accounted for. [4 arrays]
 
-      limb1 : (Limb)
-         limb darkening of sphere 1
+      tflux : (list/tuple of arrays)
+         total flux contributions from each sphere, i.e. the totals of the
+         'fluxes' arrays (time saver) [4 values]
 
-      limb2 : (Limb)
-         limb darkening of sphere 2
+      x       : (list/tuple of floats)
+         x ordinates of centres of positions of the centre of each sphere [4
+         values]
 
-      limb3 : (Limb)
-         limb darkening of sphere 3
+      y       : (list/tuple of floats)
+         y ordinates of centres of positions of the centre of each sphere [4
+         values]
 
-      limb4 : (Limb)
-         limb darkening of sphere 4
+      z       : (list/tuple of floats)
+         z ordinates of centres of positions of the centre of each sphere. The
+         z-axis must point towards Earth (crucial for ordering the spheres) [4
+         values]
 
-      n1 : (int)
-         number of annuli covering face of sphere 1
+    The arguments are deisgned so that for multiple phases of a given model,
+    r, xs, ys, fluxes, tflux will not change, while xs, ys and zs probably
+    will.
 
-      n2 : (int)
-         number of annuli covering face of sphere 2
+    Returns (f1,f2,f3) where f1, f2, f3 and f4 are the total visible fluxes
+    fro each sphere.
 
-      n3 : (int)
-         number of annuli covering face of sphere 3
-
-      n4 : (int)
-         number of annuli covering face of sphere 4
-
-      p1 : (trm.subs.Vec3)
-         x,y,z position of centre of star 1. The z-axis
-         must point towards Earth.
-
-      p2 : (trm.subs.Vec3)
-         x,y,z position of centre of star 2
-
-      p3 : (trm.subs.Vec3)
-         x,y,z position of centre of star 3
-
-      p4 : (trm.subs.Vec3)
-         x,y,z position of centre of star 4
-
-    Returns (f1,f2,f3,f4) where::
-
-      f1 : (float)
-        flux from sphere 1
-
-      f3 : (float)
-        flux from sphere 2
-
-      f3 : (float)
-        flux from sphere 3
-
-      f4 : (float)
-        flux from sphere 4
-
-    The function is designed to be called repeatedly with differing positions
-    but everything else (r1, limb1, n1 etc) staying the same.  Under these
-    circumstances it stores many of the variables required for repeated
-    evaluation.
+    Use 'rfinit' to compute the xs, ys, fluxes and tflux for each sphere in
+    order to generate the inputs to this routine.
 
     """
 
-    # This is likely to be called multiple times with identical values of r1,
-    # r2, r3, r4, limb1, limb2, limb3, limb4, n1, n2, n3, n4 so we can save
-    # some time by doing some calculations once and storing the values of r1
-    # etc to test whether any have changed.
-
-    # create tuples
-    r, n, limb = (r1,r2,r3,r4), (n1,n2,n3,n4), (limb1,limb2,limb3,limb4)
-
-    if not hasattr(flux4,'fluxes') or r != flux4.r or n != flux4.n or \
-       limb != flux4.limb:
-
-        x1, y1, fluxes1, tflux1 = rfinit(r1, limb1, n1)
-        x2, y2, fluxes2, tflux2 = rfinit(r2, limb2, n2)
-        x3, y3, fluxes3, tflux3 = rfinit(r3, limb3, n3)
-        x4, y4, fluxes4, tflux4 = rfinit(r4, limb4, n4)
-
-        flux4.x = (x1,x2,x3,x4)
-        flux4.y = (y1,y2,y3,y4)
-        flux4.fluxes = (fluxes1,fluxes2,fluxes3,fluxes4)
-        flux4.tflux = (tflux1,tflux2,tflux3,tflux4)
-        flux4.r, flux.n, flux4.limb = r, n, limb
-
     # Determine the order of the stars, furthest --> nearest from Earth.
-    x, y, z = (p1.x, p2.x, p3.x, p4.x), (p1.y, p2.y, p3.y, p4.y), \
-              (p1.z, p2.z, p3.z, p4.z)
     i1, i2, i3, i4 = np.array(z).argsort()
 
     # ok, now evaluate the fluxes from each star
 
-    # star index i1 is behind stars i2, i3 and i4. Compute boolean arrays
-    # to show which of its elements can be seen
-    vis = ((fluxes.x[i1]-x[i2])**2 + (fluxes.y[i1]-y[i2])**2 > r[i2]**2) & \
-          ((fluxes.x[i1]-x[i3])**2 + (fluxes.y[i1]-y[i3])**2 > r[i3]**2) & \
-          ((fluxes.x[i1]-x[i4])**2 + (fluxes.y[i1]-y[i4])**2 > r[i4]**2)
+    # star index i1 is behind stars i2, i3 and i4. Compute boolean arrays to
+    # show which of its elements can be seen
+    vis = \
+        ((xs[i1] + (x[i1]-x[i2]))**2 + (ys[i1] + (y[i1]-y[i2]))**2 > r[i2]**2) & \
+        ((xs[i1] + (x[i1]-x[i3]))**2 + (ys[i1] + (y[i1]-y[i3]))**2 > r[i3]**2) & \
+        ((xs[i1] + (x[i1]-x[i4]))**2 + (ys[i1] + (y[i1]-y[i4]))**2 > r[i4]**2)
 
     f1 = flux4.fluxes[i1][vis].sum()
 
     # star i2 is behind stars i3 and i4
-    vis = ((fluxes.x[i2]-x[i3])**2 + (fluxes.y[i2]-y[i3])**2 > r[i3]**2) & \
-          ((fluxes.x[i2]-x[i4])**2 + (fluxes.y[i2]-y[i4])**2 > r[i4]**2)
+    vis = \
+        ((xs[i2] + (x[i2]-x[i3]))**2 + (ys[i2] + (y[i2]-y[i3]))**2 > r[i3]**2) & \
+        ((xs[i2] + (x[i2]-x[i4]))**2 + (ys[i2] + (y[i2]-y[i4]))**2 > r[i4]**2)
 
     f2 = flux4.fluxes[i2][vis].sum()
 
     # star i3 is behind star i4
-    vis = ((fluxes.x[i3]-x[i4])**2 + (fluxes.y[i3]-y[i4])**2 > r[i4]**2)
+    vis = ((xs[i3] + (x[i3]-x[i4]))**2 + (ys[i3] + (y[i3]-y[i4]))**2 > r[i4]**2)
 
     f3 = flux4.fluxes[i3][vis].sum()
 

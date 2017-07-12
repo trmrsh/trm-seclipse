@@ -6,16 +6,19 @@ from Cython.Build import cythonize
 
 """ Setup script for the eclipsing spheres python extension"""
 
-#seclipse = [Extension(
-#    'trm.seclipse.seclipse',
-#    [os.path.join('trm','seclipse','seclipse.pyx')],
-#    define_macros   = [('MAJOR_VERSION', '0'),
-#                       ('MINOR_VERSION', '1')])]
+seclipse = [Extension(
+    'trm.seclipse._seclipse',
+    [os.path.join('trm','seclipse','_seclipse.pyx')],
+    libraries=["m"],
+    include_dirs=[numpy.get_include()],
+    extra_compile_args=["-fno-strict-aliasing"],
+    define_macros   = [('MAJOR_VERSION', '0'),
+                       ('MINOR_VERSION', '1')])]
 
 setup(name='trm.seclipse',
       version     = '1',
       packages    = ['trm', 'trm.seclipse',],
-#      ext_modules=cythonize(seclipse),
+      ext_modules=cythonize(seclipse),
 
       # metadata
       author='Tom Marsh',

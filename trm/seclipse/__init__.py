@@ -9,3 +9,5 @@ from __future__ import division
 
 from .core import *
 from . import grid
+from . import ring
+from . import model
