@@ -7,7 +7,7 @@ cimport numpy as np
 DTYPE = np.float64
 ITYPE = np.int
 ctypedef np.float64_t DTYPE_t
-ctypedef np.uint32_t ITYPE_t
+ctypedef np.int_t ITYPE_t
 
 from libc.math cimport acos, sqrt, atan2
 
@@ -757,6 +757,8 @@ def expand(np.ndarray[DTYPE_t, ndim=1] ts, np.ndarray[DTYPE_t, ndim=1] tes, np.n
             tout[n:n+nds[i]] = np.linspace(ts[i]-tes[i]/2.,ts[i]+tes[i]/2.,nds[i])
         else:
             tout[n] = ts[i]
+        n += nds[i]
+
     return tout
 
 def compress(np.ndarray[DTYPE_t, ndim=1] fs, np.ndarray[ITYPE_t, ndim=1] nds):
@@ -776,5 +778,7 @@ def compress(np.ndarray[DTYPE_t, ndim=1] fs, np.ndarray[ITYPE_t, ndim=1] nds):
             fout[i] = ((fs[n]+fs[n+nds[i]-1])/2 + fs[n+1:n+nds[i]-1].sum())/(nds[i]-1)
         else:
             fout[n] = fs[i]
+        n += nds[i]
+
     return fout
 

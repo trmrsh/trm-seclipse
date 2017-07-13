@@ -5,7 +5,9 @@ surface brightness and so the visible flux can be calculated by calculating
 the geometry of its occultation behind the other sphere. This makes the
 problem 1D albeit with various trig function calls over loops needed.
 
-For an alternative approach see seclipse.grid
+For an alternative approach see seclipse.grid.
+
+Many of the routines in this section use Cython for speed.
 """
 
 import numpy as np

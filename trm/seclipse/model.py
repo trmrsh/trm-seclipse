@@ -634,13 +634,13 @@ class Model(dict):
             # Calculate positions of stellar CoMs at 'expanded' times
             # to allow for exposure smearing
             t0 = time.time()
-            tnew = seclipse.expand(ts,tes,nds)
+            tnew = ring.expand(ts,tes,nds)
             p1s, p2s, p3s = self.paths(tnew)
             t1 = time.time()
             print('time taken to compute paths =',t1-t0)
 
             lnew = ring.lc3(r, rings, fluxes, tflux, s1, s2, s3, p1s, p2s, p3s)
-            lc = seclipse.compress(lnew, nds)
+            lc = ring.compress(lnew, nds)
             t2 = time.time()
             print('time taken to compute lc =',t2-t1)
 
@@ -676,13 +676,13 @@ class Model(dict):
             # Calculate positions of stellar CoMs (will need to expand out
             # times for smearing)
             t0 = time.time()
-            tnew = seclipse.expand(ts,tes,nds)
+            tnew = ring.expand(ts,tes,nds)
             p1s, p2s, p3s, p4s = self.paths(tnew)
             t1 = time.time()
             print('time taken to compute paths =',t1-t0)
 
             lnew = ring.lc4(r, rings, fluxes, tflux, s1, s2, s3, s4, p1s, p2s, p3s, p4s)
-            lc = seclipse.compress(lnew, nds)
+            lc = ring.compress(lnew, nds)
 
             t2 = time.time()
             print('time taken to compute lc =',t2-t1)
