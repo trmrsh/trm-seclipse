@@ -5,7 +5,9 @@ import numpy as np
 cimport numpy as np
 
 DTYPE = np.float64
+ITYPE = np.int
 ctypedef np.float64_t DTYPE_t
+ctypedef np.uint32_t ITYPE_t
 
 from libc.math cimport acos, sqrt, atan2
 
@@ -736,3 +738,43 @@ def lc4(r, rings, fluxes, tflux, s1, s2, s3, s4, p1s, p2s, p3s, p4s):
         lc[i] = s1*f1 + s2*f2 + s3*f3 + s4*f4
 
     return lc
+
+def expand(np.ndarray[DTYPE_t, ndim=1] ts, np.ndarray[DTYPE_t, ndim=1] tes, np.ndarray[ITYPE_t, ndim=1] nds):
+    """Expands a set of times, exposures and integer sub-division factors into
+    an array of times that can be used to smear each individual
+    exposure. i.e. the output is a larger array in which each original time
+    ts[i] becomes a set of nds[i] times equally spaced around the input time
+    and spanning a length tes[i].
+    """
+
+    cdef unsigned int i, n
+    cdef np.ndarray[DTYPE_t, ndim=1] tout = np.empty(nds.sum())
+
+    # counter
+    n = 0
+    for i in range(len(ts)):
+        if nds[i] > 1:
+            tout[n:n+nds[i]] = np.linspace(ts[i]-tes[i]/2.,ts[i]+tes[i]/2.,nds[i])
+        else:
+            tout[n] = ts[i]
+    return tout
+
+def compress(np.ndarray[DTYPE_t, ndim=1] fs, np.ndarray[ITYPE_t, ndim=1] nds):
+    """Compresses a set of values (typically fluxes) assumed evaluated at a
+    series of expanded times as returned by 'expand' with integer sub-division
+    factors 'nds'. The compression is carried out through trapezoidal averaging
+    of the values contributing to each output value.
+    """
+
+    cdef unsigned int i, n
+    cdef np.ndarray[DTYPE_t, ndim=1] fout = np.empty(len(nds))
+
+    # counter
+    n = 0
+    for i in range(len(nds)):
+        if nds[i] > 1:
+            fout[i] = ((fs[n]+fs[n+nds[i]-1])/2 + fs[n+1:n+nds[i]-1].sum())/(nds[i]-1)
+        else:
+            fout[n] = fs[i]
+    return fout
+

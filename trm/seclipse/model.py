@@ -18,41 +18,6 @@ def sol2au(length):
     """Converts from solar radii to AU"""
     return subs.RSUN*length/subs.AU
 
-def subgrid(ts,tes,nds):
-    """Generates sub-grids of times and weights for exposure smearing, along with
-    bin edges. Returns tsg,wsg,bins the time and weight sub-grids along with
-    the bins required to get back to the original times. The weights are
-    trapezoidal.
-
-    """
-
-    tsg  = np.empty((nds.sum()))
-    wsg  = np.empty((nds.sum()))
-    bins = np.empty((len(ts)+1))
-
-    # counters
-    n = 0
-    nsg = 0
-    for t, te, nd in zip(ts,tes,nds):
-        # first the sub-grid
-        if nd > 1:
-            tsg[nsg:nsg+nd] = np.linspace(t-te/2.,t+te/2.,nd)
-            wsg[nsg] = 0.5/(nd-1)
-            wsg[nsg+1:nsg+nd-1] = 1.0/(nd-1)
-            wsg[nsg+nd-1] = 0.5/(nd-1)
-        else:
-            tsg[nsg] = t
-            wsg[nsg] = 1.0
-        nsg += nd
-
-        # then the bins
-        if n == 0:
-            bins[0]   = t-te/2.-1.e-9
-        n += 1
-        bins[n] = t+te/2.+1.e-9
-
-    return (tsg,wsg,bins)
-
 def load_data(dfile):
     """Loads a data file assumed to be in space-separated
     column form with columns of time, exposure time, flux,
@@ -627,6 +592,7 @@ class Model(dict):
     def fit(self, ts, tes, nds):
         """
         Computes light curves corresponding to input times.
+
         Arguments::
 
           ts   : (array)
@@ -637,9 +603,6 @@ class Model(dict):
 
           nds  : (array)
              integer sub-division factors to smear exposures.
-
-          ncpu : integer
-             number of cores to use in parallel
         """
 
         if self.model == 'triple':
@@ -668,15 +631,16 @@ class Model(dict):
             fluxes = (fluxes1,fluxes2,fluxes3)
             tflux = (tflux1,tflux2,tflux3)
 
-            # Calculate positions of stellar CoMs (will need to expand out
-            # times for smearing)
+            # Calculate positions of stellar CoMs at 'expanded' times
+            # to allow for exposure smearing
             t0 = time.time()
-            p1s, p2s, p3s = self.paths(ts)
+            tnew = seclipse.expand(ts,tes,nds)
+            p1s, p2s, p3s = self.paths(tnew)
             t1 = time.time()
             print('time taken to compute paths =',t1-t0)
 
-            lc = ring.lc3(r, rings, fluxes, tflux, s1, s2, s3, p1s, p2s, p3s)
-
+            lnew = ring.lc3(r, rings, fluxes, tflux, s1, s2, s3, p1s, p2s, p3s)
+            lc = seclipse.compress(lnew, nds)
             t2 = time.time()
             print('time taken to compute lc =',t2-t1)
 
@@ -712,11 +676,13 @@ class Model(dict):
             # Calculate positions of stellar CoMs (will need to expand out
             # times for smearing)
             t0 = time.time()
-            p1s, p2s, p3s, p4s = self.paths(ts)
+            tnew = seclipse.expand(ts,tes,nds)
+            p1s, p2s, p3s, p4s = self.paths(tnew)
             t1 = time.time()
             print('time taken to compute paths =',t1-t0)
 
-            lc = ring.lc4(r, rings, fluxes, tflux, s1, s2, s3, s4, p1s, p2s, p3s, p4s)
+            lnew = ring.lc4(r, rings, fluxes, tflux, s1, s2, s3, s4, p1s, p2s, p3s, p4s)
+            lc = seclipse.compress(lnew, nds)
 
             t2 = time.time()
             print('time taken to compute lc =',t2-t1)
