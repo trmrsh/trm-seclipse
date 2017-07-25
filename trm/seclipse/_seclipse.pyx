@@ -1,18 +1,15 @@
-from __future__ import division
-import math
-
 import numpy as np
 cimport numpy as np
+cimport cython
+from libc.math cimport acos, sqrt, atan2, M_PI
 
 DTYPE = np.float64
 ITYPE = np.int
 ctypedef np.float64_t DTYPE_t
 ctypedef np.int_t ITYPE_t
 
-from libc.math cimport acos, sqrt, atan2
-
-
-def visible(double rring, double r, double x, double y):
+@cython.cdivision(True)
+cdef visible(double rring, double r, double x, double y):
     """Computes the visible range of a circle (ring) of radius 'rring', when
     obscured by an opaque circle of radius 'r' offset from the centre of the
     ring by (x,y).
@@ -65,15 +62,15 @@ def visible(double rring, double r, double x, double y):
         cosp = (rring**2+psq-r**2)/(2.*rring*p)
 
         phi = acos(cosp)
-        lo = (theta+phi)/(2.*math.pi)
-        hi = (theta-phi)/(2.*math.pi) + 1
+        lo = (theta+phi)/(2.*M_PI)
+        hi = (theta-phi)/(2.*M_PI) + 1
         if lo < 0:
             lo += 1
             hi += 1
 
     return (lo,hi)
 
-def overlap(double l1, double h1, double l2, double h2):
+cdef overlap(double l1, double h1, double l2, double h2):
     """Routine to combine two visibility ranges l1 to h1, l2 to h2, representing
     contiguous, potentially overlapping, visible fractions of a circle,
     returning either a single region or two disjoint regions of
@@ -371,8 +368,11 @@ cdef double fvis3(
 
     return comb3(l1, h1, l2, h2, l3, h3)
 
-cdef double ring1(np.ndarray[DTYPE_t, ndim=1] rings, np.ndarray[DTYPE_t, ndim=1] fluxes, 
-          double tflux, double r, double x, double y):
+@cython.boundscheck(False)
+@cython.wraparound(False)
+cdef double ring1(np.ndarray[DTYPE_t, ndim=1, mode='c'] rings,
+                  np.ndarray[DTYPE_t, ndim=1, mode='c'] fluxes,
+                  double tflux, double r, double x, double y):
     """Computes the flux from a star potentially occulted by 1 other.
 
     Arguments::
@@ -400,24 +400,26 @@ cdef double ring1(np.ndarray[DTYPE_t, ndim=1] rings, np.ndarray[DTYPE_t, ndim=1]
     See also ring2, ring3 and ring4
 
     """
+    cdef unsigned int i, n = len(rings)
     cdef double p, rring, flux, sum
 
     # try to speed things a bit with an early bail out. This will often be
     # helpful because most of the time, the stars will not align.
     p = sqrt(x**2+y**2)
-    if p >= rings[-1]+r:
+    if p >= rings[n-1]+r:
         return tflux
 
     # ok, need to calculate
     sum = 0.
-    for rring, flux in zip(rings, fluxes):
-        sum += flux*fvis1(rring, r, x, y)
+    for i in range(n):
+        sum += fluxes[i]*fvis1(rings[i], r, x, y)
 
     return sum
 
-
+@cython.boundscheck(False)
+@cython.wraparound(False)
 cdef double ring2(np.ndarray[DTYPE_t, ndim=1] rings, np.ndarray[DTYPE_t, ndim=1] fluxes,
-          double tflux, double r1, double x1, double y1, double r2, double x2, double y2):
+                  double tflux, double r1, double x1, double y1, double r2, double x2, double y2):
     """Computes the flux from a star potentially occulted by 2 others.
 
     Arguments::
@@ -455,26 +457,30 @@ cdef double ring2(np.ndarray[DTYPE_t, ndim=1] rings, np.ndarray[DTYPE_t, ndim=1]
 
     """
 
-    cdef double p1, p2, sum, rring, flux
+    cdef unsigned int i, n = len(rings)
+    cdef double p1, p2, sum, rring, flux, rout = rings[n-1]
 
     # fast bail out
     p1 = sqrt(x1**2 + y1**2)
     p2 = sqrt(x2**2 + y2**2)
-    if p1 >= rings[-1]+r1 and p2 >= rings[-1]+r2:
+    if p1 >= rout+r1 and p2 >= rout+r2:
         return tflux
 
     # get calculating
     sum = 0.
-    for rring, flux in zip(rings, fluxes):
+    for i in range(n):
         # partial by both 1 and 2
-        sum += flux*fvis2(rring, r1, x1, y1, r2, x2, y2)
+        sum += fluxes[i]*fvis2(rings[i], r1, x1, y1, r2, x2, y2)
 
     return sum
 
-cdef double ring3(np.ndarray[DTYPE_t, ndim=1] rings, np.ndarray[DTYPE_t, ndim=1] fluxes, double tflux,
-          double r1, double x1, double y1,
-          double r2, double x2, double y2,
-          double r3, double x3, double y3):
+@cython.boundscheck(False)
+@cython.wraparound(False)
+cdef double ring3(np.ndarray[DTYPE_t, ndim=1] rings, np.ndarray[DTYPE_t, ndim=1] fluxes,
+                  double tflux,
+                  double r1, double x1, double y1,
+                  double r2, double x2, double y2,
+                  double r3, double x3, double y3):
     """Computes the flux from a star potentially occulted by 3 others.
 
     Arguments::
@@ -521,20 +527,21 @@ cdef double ring3(np.ndarray[DTYPE_t, ndim=1] rings, np.ndarray[DTYPE_t, ndim=1]
 
     """
 
-    cdef double p1, p2, p3, sum, rring, flux
+    cdef unsigned int i, n = len(rings)
+    cdef double p1, p2, p3, sum, rring, flux, rout = rings[n-1]
 
     # fast bail out
     p1 = sqrt(x1**2+y1**2)
     p2 = sqrt(x2**2+y2**2)
     p3 = sqrt(x3**2+y3**2)
-    if p1 >= rings[-1]+r1 and p2 >= rings[-1]+r2 and p3 >= rings[-1]+r3:
+    if p1 >= rout+r1 and p2 >= rout+r2 and p3 >= rout+r3:
         return tflux
 
     # get calculating
     sum = 0.
-    for rring, flux in zip(rings, fluxes):
+    for i in range(n):
         # partial obscuration by all 3.
-        sum += flux*fvis3(rring, r1, x1, y1, r2, x2, y2, r3, x3, y3)
+        sum += fluxes[i]*fvis3(rings[i], r1, x1, y1, r2, x2, y2, r3, x3, y3)
 
     return sum
 
@@ -711,7 +718,7 @@ def flux4(r, rings, fluxes, tflux, x, y, z):
     return tuple(fs)
 
 def lc4(r, rings, fluxes, tflux, s1, s2, s3, s4, p1s, p2s, p3s, p4s):
-    """"Wrapper around 'flux4' to run over lots of positions specified in the 
+    """"Wrapper around 'flux4' to run over lots of positions specified in the
     p1s, etc tuples of x,y,z positions for each star.
     """
 
@@ -739,7 +746,9 @@ def lc4(r, rings, fluxes, tflux, s1, s2, s3, s4, p1s, p2s, p3s, p4s):
 
     return lc
 
-def expand(np.ndarray[DTYPE_t, ndim=1] ts, np.ndarray[DTYPE_t, ndim=1] tes, np.ndarray[ITYPE_t, ndim=1] nds):
+@cython.boundscheck(False)
+def expand(np.ndarray[DTYPE_t, ndim=1] ts, np.ndarray[DTYPE_t, ndim=1] tes,
+           np.ndarray[ITYPE_t, ndim=1] nds):
     """Expands a set of times, exposures and integer sub-division factors into
     an array of times that can be used to smear each individual
     exposure. i.e. the output is a larger array in which each original time
@@ -748,7 +757,7 @@ def expand(np.ndarray[DTYPE_t, ndim=1] ts, np.ndarray[DTYPE_t, ndim=1] tes, np.n
     """
 
     cdef unsigned int i, n
-    cdef np.ndarray[DTYPE_t, ndim=1] tout = np.empty(nds.sum())
+    cdef np.ndarray[DTYPE_t, ndim=1] tout = np.empty(nds.sum(), dtype=DTYPE)
 
     # counter
     n = 0
@@ -761,6 +770,8 @@ def expand(np.ndarray[DTYPE_t, ndim=1] ts, np.ndarray[DTYPE_t, ndim=1] tes, np.n
 
     return tout
 
+@cython.cdivision(True)
+@cython.boundscheck(False)
 def compress(np.ndarray[DTYPE_t, ndim=1] fs, np.ndarray[ITYPE_t, ndim=1] nds):
     """Compresses a set of values (typically fluxes) assumed evaluated at a
     series of expanded times as returned by 'expand' with integer sub-division
@@ -768,17 +779,23 @@ def compress(np.ndarray[DTYPE_t, ndim=1] fs, np.ndarray[ITYPE_t, ndim=1] nds):
     of the values contributing to each output value.
     """
 
-    cdef unsigned int i, n
-    cdef np.ndarray[DTYPE_t, ndim=1] fout = np.empty(len(nds))
+    cdef unsigned int i, j, n, nout=len(nds)
+    cdef double sum
+    cdef np.ndarray[DTYPE_t, ndim=1] fout = np.empty(nout, dtype=DTYPE)
 
     # counter
     n = 0
-    for i in range(len(nds)):
+    for i in range(nout):
         if nds[i] > 1:
-            fout[i] = ((fs[n]+fs[n+nds[i]-1])/2 + fs[n+1:n+nds[i]-1].sum())/(nds[i]-1)
+            sum = (fs[n]+fs[n+nds[i]-1])/2
+            n += 1
+            for j in range(nds[i]-2):
+                sum += fs[n+j]
+            n += nds[i]-1
+            fout[i] = sum / (nds[i]-1)
         else:
             fout[n] = fs[i]
-        n += nds[i]
+            n += 1
 
     return fout
 
