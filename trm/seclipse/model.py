@@ -6,6 +6,7 @@ for modelling light curves.
 """
 
 import math
+from collections import OrderedDict
 import numpy as np
 from trm import orbits, subs
 from .core import Limb
@@ -26,8 +27,8 @@ def load_data(dfile):
     Returns (ts,tes,fs,fes,ws,nds)
     """
     ts, tes, fs, fes, ws, nds = np.loadtxt(dfile, unpack=True)
-    nds = data[:,5].astype(np.int)
-    print('Loaded',len(data),'points from',dat)
+    nds = nds.astype(np.int)
+    print('Loaded',len(ts),'points from',dfile)
     return (ts,tes,fs,fes,ws,nds)
 
 def write_data(fname, ts, tes, fs, fes, ws, nds, comment=''):
@@ -35,21 +36,16 @@ def write_data(fname, ts, tes, fs, fes, ws, nds, comment=''):
     Writes out the data
     """
 
-    with open(fname,'w') as fout:
-        fout.write("""
-# This file was written by lcmodel.write_data
-# from David.
-#
-# Columns are time (BJD-2454833), exposure time
-# (days), flux, error in flux, weighting factor
-# for chi**2, sub-division factor for exposure
-# smearing.
-#
-""")
-        fout.write(comment + '\n#\n')
-        for t,te,f,fe,w,nd in zip(ts,tes,fs,fes,ws,nds):
-            fout.write(('{0:14.9f} {1:9.3e} {2:8.6f} {3:8.6f}' +
-                        ' {4:6.4f} {5:2d}\n').format(t,te,f,fe,w,nd))
+    header = """
+This file was written by seclipse.model.write_data
+
+Columns are time, exposure time (days), flux, error in flux, weighting factor
+for chi**2, sub-division factor for exposure smearing.
+
+""" + comment
+
+    np.savetxt(fname, np.column_stack([ts,tes,fs,fes,ws,nds]),
+               '%14.9f %9.3e %8.6f %8.6f %6.4f %2d', header=header)
 
 def calc_sfac(fit, fs, fes, ws=None):
     """
@@ -152,6 +148,10 @@ class Model(dict):
 
       s3      : (float)
          surface brightness of star 3
+
+      third   : (float)
+         fractional "third" light, i.e. extra light from something other
+         than stellar components. Range 0 to 1.
 
       limb1   : (float)
          linear limb darkening coeff of star 1
@@ -289,6 +289,10 @@ class Model(dict):
       s4      : (float)
          surface brightness of star 4
 
+      third   : (float)
+         fractional "third" light, i.e. extra light from something other
+         than stellar components. Range 0 to 1.
+
       limb1   : (float)
          linear limb darkening coeff of star 1
 
@@ -348,6 +352,7 @@ class Model(dict):
              's1' : (1., 0., 5000.),
              's2' : (1., 0., 5000.),
              's3' : (1., 0., 5000.),
+             'third' : (0.05, 0., 1.),
              'limb1' : (0.01, 0., 1.),
              'limb2' : (0.01, 0., 1.),
              'limb3' : (0.01, 0., 1.),
@@ -390,6 +395,7 @@ class Model(dict):
              's2' : (1., 0., 5000.),
              's3' : (1., 0., 5000.),
              's4' : (1., 0., 5000.),
+             'third' : (0.05, 0., 1.),
              'limb1' : (0.01, 0., 1.),
              'limb2' : (0.01, 0., 1.),
              'limb3' : (0.01, 0., 1.),
@@ -402,7 +408,7 @@ class Model(dict):
              }
         }
 
-    def __init__(self, fname):
+    def __init__(self, arg):
         """Given a file with lines like:
 
         model = triple # model type
@@ -410,10 +416,11 @@ class Model(dict):
         r2 = 1.0 f  # fixed parameter
         n1 = 12 # integer parameter
 
-        (order immaterial) this defines the model parameters. Each of these
-        will be loaded into a dictionary with two-element list values of the
-        form [param, variable] where param is the parameter value and variable
-        = True if variable.  The parameters are checked against a list called
+        (order immaterial) or an equivalent OrderedDict: {'model' : 'triple',
+        ...} this defines the model parameters. Each of these will be loaded
+        into a dictionary with two-element list values of the form [param,
+        variable] where param is the parameter value and variable = True if
+        variable.  The parameters are checked against a list called
         Model.PARAMS so print these out to see them all. The model type
         ('triple' or 'quad2') is stored separately as an attribute
         'model'. Other attributes are 'pnames' to store all parameter names
@@ -422,50 +429,96 @@ class Model(dict):
         See the main help on Model objects for the full list of parameters.
         """
 
-        self.vnames = []
         self.pnames = []
-        with open(fname) as fin:
-            for line in fin:
-                if not line.startswith('#') and not line.isspace() and \
-                   line != '' and line.find('=') > -1:
-                    equals = line.find('=')
-                    name = line[:equals].strip()
+        self.vnames = []
+        if isinstance(arg, str):
+            # Read in model from a file
+            with open(arg) as fin:
+                for line in fin:
+                    if not line.startswith('#') and not line.isspace() and \
+                            line != '' and line.find('=') > -1:
+                        equals = line.find('=')
+                        name = line[:equals].strip()
 
-                    rest = line[equals+1:]
-                    hash = line.find('#')
-                    elems = rest[:hash].split() \
-                        if hash > -1 else rest.split()
+                        rest = line[equals+1:]
+                        hash = line.find('#')
+                        elems = rest[:hash].split() \
+                            if hash > -1 else rest.split()
 
-                    if name == 'model':
-                        # Trap the model name
-                        model = elems[0]
-                        if model not in Model.PARAMS:
-                            raise Exception(
-                                'Model type not recognised in line: {:s}'.format(line)
-                                )
-                        self.model = elems[0]
+                        if name == 'model':
+                            # Trap the model name
+                            if elems[0] not in Model.PARAMS:
+                                raise Exception(
+                                    'Model type not recognised in line: {:s}'.format(line)
+                                    )
+                            self.model = elems[0]
 
-                    elif len(elems) == 2:
-                        if elems[1] == 'f':
-                            # fixed floating point parameter
-                            self[name] = [float(elems[0]),False]
-                            self.pnames.append(name)
-                        elif elems[1] == 'v':
-                            # fixed floating point parameter
-                            self[name] = [float(elems[0]),True]
-                            self.vnames.append(name)
+                        elif len(elems) == 2:
+                            if elems[1] == 'f':
+                                # fixed floating point parameter
+                                self[name] = [float(elems[0]),False]
+                                self.pnames.append(name)
+                            elif elems[1] == 'v':
+                                # fixed floating point parameter
+                                self[name] = [float(elems[0]),True]
+                                self.vnames.append(name)
+                                self.pnames.append(name)
+                            else:
+                                raise Exception(
+                                    'Must specify "f"=fixed or "v"=variable after all float parameters, line: {:s}'.format(line)
+                                    )
+                        elif len(elems) == 1:
+                            self[name] = [int(elems[0]),False]
                             self.pnames.append(name)
                         else:
                             raise Exception(
-                                'Must specify "f"=fixed or "v"=variable after all float parameters, line: {:s}'.format(line)
+                                'Could not interpret line: {:s}'.format(line)
                                 )
-                    elif len(elems) == 1:
-                        self[name] = [int(elems[0]),False]
+
+        elif isinstance(arg, OrderedDict):
+            # Read in model from a dictionary (as may be created from an mcmc log file)
+            for name, value in arg.items():
+                elems = value.split()
+
+                if name == 'model':
+                    # Trap the model name
+                    if elems[0] not in Model.PARAMS:
+                        raise Exception(
+                            'Model type not recognised in line: {:s}'.format(elems[0])
+                            )
+                    self.model = elems[0]
+
+                elif len(elems) == 2:
+                    if elems[1] == 'f':
+                        # fixed floating point parameter
+                        self[name] = [float(elems[0]),False]
+                        self.pnames.append(name)
+                    elif elems[1] == 'v':
+                        # fixed floating point parameter
+                        self[name] = [float(elems[0]),True]
+                        self.vnames.append(name)
                         self.pnames.append(name)
                     else:
                         raise Exception(
-                            'Could not interpret line: {:s}'.format(line)
-                            )
+                            'Must specify "f"=fixed or "v"=variable after all float parameters, line: {:s}'.format(line)
+                                    )
+                elif len(elems) == 1:
+                    self[name] = [int(elems[0]),False]
+                    self.pnames.append(name)
+                else:
+                    raise Exception(
+                        'Could not interpret name / value: {:s} / {:s}'.format(name,value)
+                        )
+
+        else:
+            raise Exception(
+                'Argument was not a string [filename] or a dictionary'
+                )
+
+        # backwards compatibility
+        if 'third' not in self.pnames:
+            self['third'] = [0.,False]
+            self.pnames.append('third')
 
         # check that all the expected parameters are defined
         for pname in Model.PARAMS[self.model]:
@@ -546,8 +599,8 @@ class Model(dict):
     def prior(self):
         """
         Returns -2*ln(prior) [suitable for adding to chisq]  based
-        upon timing model. Should really be modified to account for
-        covariances.
+        upon timing model. This is over-ridden in derived class used
+        to re-define the prior through an input file.
         """
         return 0.
 
@@ -605,6 +658,8 @@ class Model(dict):
              integer sub-division factors to smear exposures.
         """
 
+        third = self['third'][0]
+
         if self.model == 'triple':
 
             limb1 = Limb(Limb.POLY, self['limb1'][0])
@@ -633,16 +688,16 @@ class Model(dict):
 
             # Calculate positions of stellar CoMs at 'expanded' times
             # to allow for exposure smearing
-            t0 = time.time()
             tnew = ring.expand(ts,tes,nds)
             p1s, p2s, p3s = self.paths(tnew)
-            t1 = time.time()
-            print('time taken to compute paths =',t1-t0)
 
+            # Calculate light curve
             lnew = ring.lc3(r, rings, fluxes, tflux, s1, s2, s3, p1s, p2s, p3s)
             lc = ring.compress(lnew, nds)
-            t2 = time.time()
-            print('time taken to compute lc =',t2-t1)
+
+            # add "third" light
+            total = s1*tflux1+s2*tflux2+s3*tflux3
+            lc = third*total + (1-third)*lc
 
         elif self.model == 'quad2':
             limb1 = Limb(Limb.POLY, self['limb1'][0])
@@ -673,19 +728,17 @@ class Model(dict):
             fluxes = (fluxes1,fluxes2,fluxes3,fluxes4)
             tflux = (tflux1,tflux2,tflux3,tflux4)
 
-            # Calculate positions of stellar CoMs (will need to expand out
-            # times for smearing)
-            t0 = time.time()
+            # Calculate positions of stellar CoMs
             tnew = ring.expand(ts,tes,nds)
             p1s, p2s, p3s, p4s = self.paths(tnew)
-            t1 = time.time()
-            print('time taken to compute paths =',t1-t0)
 
+            # Calculate light curve
             lnew = ring.lc4(r, rings, fluxes, tflux, s1, s2, s3, s4, p1s, p2s, p3s, p4s)
             lc = ring.compress(lnew, nds)
 
-            t2 = time.time()
-            print('time taken to compute lc =',t2-t1)
+            # add "third" light
+            total = s1*tflux1+s2*tflux2+s3*tflux3+s4*tflux4
+            lc = third*total + (1-third)*lc
 
         else:
             raise Exception(
@@ -696,21 +749,21 @@ class Model(dict):
 
     def cvars(self):
         """
-        Returns arrays of values, typical spreads and names of current
-        variable parameters
+        Returns arrays of values and typical spreads of the variable
+        parameters in the order defined by the vnames attribute
         """
         vals   = []
         sigmas = []
         for name in self.vnames:
             vals.append(self[name][0])
             sigmas.append(Model.PARAMS[self.model][name][0])
-        return (np.array(vals),np.array(sigmas),self.vnames)
+        return (np.array(vals), np.array(sigmas))
 
     def update(self,p):
         """
         Updates variable parameters of a model given a vector or values.
-        It is assumed that the values are specified in the same order as
-        returned by "cvars"
+        It is assumed that the values in p match the order of the vnames
+        attribute. Woe betide you if this is not the case!
         """
 
         for n, name in enumerate(self.vnames):
@@ -727,14 +780,15 @@ class Model(dict):
             flag = \
                 self['r1'][0] > 0 and self['r2'][0] > 0 and \
                 self['r3'][0] > 0 and \
-                self['a1'][0] >= 0 and self['a2'][0] >= 0 and \
-                self['a3'][0] >= 0 and self['ab'][0] >= 0 and \
+                self['a1'][0] > 0 and self['a2'][0] > 0 and \
+                self['a3'][0] > 0 and self['ab'][0] > 0 and \
                 self['r1'][0] + self['r2'][0] < (self['a1'][0] + self['a2'][0])*(1-self['eb1'][0]) and \
                 self['eb1'][0] >= 0. and self['eb1'][0] < 1. and \
                 self['eb2'][0] >= 0. and self['eb2'][0] < 1. and \
                 self['Pb1'][0] > 0. and self['Pb2'][0] > 0. and \
                 self['s1'][0] >= 0. and self['s2'][0] >= 0. and \
                 self['s3'][0] >= 0. and \
+                self['third'][0] >= 0. and self['third'][0] <= 1. and \
                 self['limb1'][0] >= 0. and self['limb1'][0] <= 1. and \
                 self['limb2'][0] >= 0. and self['limb2'][0] <= 1. and \
                 self['limb3'][0] >= 0. and self['limb3'][0] <= 1.
@@ -743,9 +797,9 @@ class Model(dict):
             flag = \
                 self['r1'][0] > 0 and self['r2'][0] > 0 and \
                 self['r3'][0] > 0 and self['r4'][0] > 0 and \
-                self['a1'][0] >= 0 and self['a2'][0] >= 0 and \
-                self['a3'][0] >= 0 and self['a4'][0] >= 0 and \
-                self['ab1'][0] >= 0 and self['ab2'][0] >= 0 and \
+                self['a1'][0] > 0 and self['a2'][0] > 0 and \
+                self['a3'][0] > 0 and self['a4'][0] > 0 and \
+                self['ab1'][0] > 0 and self['ab2'][0] > 0 and \
                 self['r1'][0] + self['r2'][0] < (self['a1'][0] + self['a2'][0])*(1-self['eb1'][0]) and \
                 max(self['r1'][0] + self['a1'][0]*(1+self['eb1'][0]), self['r2'][0] + self['a2'][0]*(1+self['eb1'][0])) + \
                 self['r4'][0] < (self['ab1'][0] + self['a4'][0])*(1-self['eb2'][0]) and \
@@ -756,6 +810,7 @@ class Model(dict):
                 self['Pb1'][0] > 0. and self['Pb2'][0] > 0. and self['Pb3'][0] > 0. and \
                 self['s1'][0] >= 0. and self['s2'][0] >= 0. and \
                 self['s3'][0] >= 0. and self['s4'][0] >= 0. and \
+                self['third'][0] >= 0. and self['third'][0] <= 1. and \
                 self['limb1'][0] >= 0. and self['limb1'][0] <= 1. and \
                 self['limb2'][0] >= 0. and self['limb2'][0] <= 1. and \
                 self['limb3'][0] >= 0. and self['limb3'][0] <= 1. and \
@@ -765,6 +820,7 @@ class Model(dict):
             raise Exception(
                 'Model = {:s} not recognised'.format(self.model)
                 )
+        return flag
 
 
     def write(self,fobj,prefix=''):
@@ -775,8 +831,8 @@ class Model(dict):
         fobj.write(prefix + 'model = ' + self.model + '\n')
         for name in self.pnames:
             v = self[name]
-            if instance(v,int):
-                fobj.write(prefix + name + ' = ' + str(v[0]) + ' v\n')
+            if isinstance(v[0],int):
+                fobj.write(prefix + name + ' = ' + str(v[0]) + '\n')
             else:
                 if v[1]:
                     fobj.write(prefix + name + ' = ' + str(v[0]) + ' v\n')
