@@ -13,7 +13,8 @@ seclipse = [Extension(
     include_dirs=[numpy.get_include()],
     extra_compile_args=["-fno-strict-aliasing"],
     define_macros   = [('MAJOR_VERSION', '0'),
-                       ('MINOR_VERSION', '1')])]
+                       ('MINOR_VERSION', '1')]),
+            ]
 
 setup(name='trm.seclipse',
       version     = '1',
