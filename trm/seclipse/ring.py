@@ -63,6 +63,3 @@ def rfinit(r, limb, n):
     # return the results
     return (rings, fluxes, fluxes.sum())
 
-
-
-
