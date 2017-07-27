@@ -89,34 +89,27 @@ def flux4(r, rings, fluxes, tflux, x, y, z):
 
     Arguments::
 
-      r       : (list/tuple of floats)
+      r       : (tuple of floats)
          radii of spheres [4 values]
 
-      xs      : (list/tuple of arrays)
-         x-ordinates of elements visible faces of each sphere, measured
-         relative to the centre of each face [4 arrays]
+      rings   : (tuple of arrays)
+         arrays of the radii of annuli covering the faces of each star [4 arrays]
 
-      ys      : (list/tuple of arrays)
-         y-ordinates of elements visible faces of each sphere, measured
-         relative to the centre of each face [4 arrays]
+      fluxes  : (tuple of arrays)
+         arrays of the fluxes of annuli covering the faces of each star [4 arrays]
 
-      fluxes  : (list/tuple of arrays)
-         arrays of flux contributions from the annuli covering each
-         sphere. This allows limb darkening to be accounted for. [4 arrays]
+      tfluxes  : (tuple of floats)
+         total flux contributions from each sphere [4 values]
 
-      tflux : (list/tuple of arrays)
-         total flux contributions from each sphere, i.e. the totals of the
-         'fluxes' arrays (time saver) [4 values]
-
-      x       : (list/tuple of floats)
+      x       : (tuple of floats)
          x ordinates of centres of positions of the centre of each sphere [4
          values]
 
-      y       : (list/tuple of floats)
+      y       : (tuple of floats)
          y ordinates of centres of positions of the centre of each sphere [4
          values]
 
-      z       : (list/tuple of floats)
+      z       : (tuple of floats)
          z ordinates of centres of positions of the centre of each sphere. The
          z-axis must point towards Earth (crucial for ordering the spheres) [4
          values]
