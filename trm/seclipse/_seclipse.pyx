@@ -545,6 +545,68 @@ cdef double ring3(np.ndarray[DTYPE_t, ndim=1] rings, np.ndarray[DTYPE_t, ndim=1]
 
     return sum
 
+def flux2(r, rings, fluxes, tflux, x, y, z):
+    """Computes flux from each of three spheres, accounting for their mutual
+    eclipses. All arguments here are array-like with 3 elements each, covering
+    the 3 spheres.
+
+    Arguments::
+
+      r       : (list/tuple of floats)
+         radii of spheres [2 values]
+
+      rings   : (tuple of arrays)
+         arrays of radii of annuli covering the faces of each sphere [2
+         arrays]
+
+      fluxes  : (tuple of arrays)
+         arrays of flux contributions from the annuli covering each
+         sphere. This allows limb darkening to be accounted for. [2 arrays]
+
+      tflux   : (tuple of arrays)
+         total flux contributions from each sphere, i.e. the totals of the
+         'fluxes' arrays (time saver) [2 values]
+
+      x       : (tuple of floats)
+         x ordinates of centres of positions of the centre of each sphere [2
+         values]
+
+      y       : (tuple of floats)
+         y ordinates of centres of positions of the centre of each sphere [2
+         values]
+
+      z       : (list/tuple of floats)
+         z ordinates of centres of positions of the centre of each sphere. The
+         z-axis must point towards Earth (crucial for ordering the spheres) [2
+         values]
+
+    Returns (f1,f2) where f1 and f2 are the total visible fluxes from
+    each sphere.
+
+    Use 'rfinit' to compute the radii, fluxes and tflux for each sphere in
+    order to generate the inputs to this routine.
+
+    """
+
+    cdef unsigned int i1, i2
+    cdef double f1, f2
+
+    # Determine the order of the stars, furthest --> nearest from Earth.
+    i1, i2 = np.array(z).argsort()
+
+    # ok, now evaluate the fluxes from each star
+
+    # star i1 is behind star i2
+    f1 = ring1(rings[i1], fluxes[i1], tflux[i1], r[i2], x[i2]-x[i1], y[i2]-y[i1])
+
+    # star i2 is unobscured
+    f2 = tflux[i2]
+
+    # unscramble the sort order
+    fs = [0,0]
+    fs[i1], fs[i2] = f1, f2
+    return tuple(fs)
+
 def flux3(r, rings, fluxes, tflux, x, y, z):
     """Computes flux from each of three spheres, accounting for their mutual
     eclipses. All arguments here are array-like with 3 elements each, covering
