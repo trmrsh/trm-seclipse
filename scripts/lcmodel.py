@@ -150,7 +150,7 @@ weighting factor for chi**2, sub-division factor for exposure smearing.
 
         # plot paths rel to star 3
 
-        if model.model == 'triple':
+        if model.model == 'triple' or model.model == 'tdisc':
             (x1s,y1s,z1s),(x2s,y2s,z2s),\
                 (x3s,y3s,z3s) = model.paths(ts)
         elif model.model == 'quad2':
@@ -162,70 +162,95 @@ weighting factor for chi**2, sub-division factor for exposure smearing.
         # plot circles to show region over which dips occur
         r1 = seclipse.model.sol2au(model['r1'][0])
         r2 = seclipse.model.sol2au(model['r2'][0])
-        r3 = seclipse.model.sol2au(model['r3'][0])
-        r4 = seclipse.model.sol2au(model['r4'][0])
+        if model.model == 'triple' or model.model == 'quad2':
+            r3 = seclipse.model.sol2au(model['r3'][0])
+        elif model.model == 'tdisc':
+            r3 = seclipse.model.sol2au(model['rdisc'][0])
+        if model.model == 'quad2':
+            r4 = seclipse.model.sol2au(model['r4'][0])
         theta = np.linspace(0,2.*np.pi,200)
         xc, yc = np.cos(theta), np.sin(theta)
 
         # black for star 3 only, blue for star 1 + 3 
         # eclipses, green for 2 + 3 eclipses.
 
-        print('blue = 1, green = 2, black = 3, red = 4')
+        if model.model == 'quad2':
+            print('blue = 1, green = 2, black = 3, red = 4')
+        else:
+            print('blue = 1, green = 2, black = 3')
+
         fig = plt.figure()
 
         # first panel star 1 (and 4) rel to 3
         ax1 = fig.add_subplot(121)
         ax1.set_aspect('equal')
-        ax1.plot(r3*xc,r3*yc,'k')
-        ax1.plot((r1+r3)*xc,(r1+r3)*yc,'b--')
-        ax1.plot((r4+r3)*xc,(r4+r3)*yc,'r--')
-        ax1.set_title('Star 1 (and 4) rel to 3')
-        ax1.set_xlabel('X [AU]')
-        ax1.set_ylabel('Y [AU]')
-        ax1.set_xlim(-3*r3,3*r3)
-        ax1.set_ylim(-3*r3,3*r3)
+        if model.model == 'tdisc':
+            pfac = np.cos(np.radians(model['idisc'][0]))
+            x = r3*xc
+            y = r3*pfac*yc
+            OMEGAdisc = np.radians(model['OMEGAdisc'][0])
+            coso = np.cos(OMEGAdisc)
+            sino = np.sin(OMEGAdisc)
+            xt = -sino*x-coso*y
+            yt = +coso*x-sino*y
+            ax1.plot(xt,yt,'k')
+        else:
+            ax1.plot(r3*xc,r3*yc,'k')
+            ax1.plot((r1+r3)*xc,(r1+r3)*yc,'b--')
 
         x1s -= x3s
         y1s -= y3s
-        rsq = x1s**2+y1s**2
-        mins = np.r_[True, rsq[1:] < rsq[:-1]] & \
-               np.r_[rsq[:-1] < rsq[1:], True]
         ax1.plot(x1s,y1s,'b')
-        ax1.plot(x1s[mins],y1s[mins],'.b')
+        if model.model != 'tdisc':
+            rsq = x1s**2+y1s**2
+            mins = np.r_[True, rsq[1:] < rsq[:-1]] & \
+                   np.r_[rsq[:-1] < rsq[1:], True]
+            ax1.plot(x1s[mins],y1s[mins],'.b')
+            ax1.plot(0,0,'ok',zorder=1)
 
         if model.model == 'quad2':
             x4s -= x3s
             y4s -= y3s
             ax1.plot(x4s,y4s,'r')
+            ax1.plot((r4+r3)*xc,(r4+r3)*yc,'r--')
+            ax1.set_title('Star 1 (and 4) rel to 3')
+        else:
+            ax1.set_title('Star 1 rel to 3')
 
-        ax1.plot(0,0,'ok',zorder=1)
+        ax1.set_xlabel('X [AU]')
+        ax1.set_ylabel('Y [AU]')
+        ax1.set_xlim(-3*r3,3*r3)
+        ax1.set_ylim(-3*r3,3*r3)
 
         # second panel star 2 (and 4) rel to 3
         ax2 = fig.add_subplot(122)
         ax2.set_aspect('equal')
-        ax2.plot(r3*xc,r3*yc,'k')
-        ax2.plot((r2+r3)*xc,(r2+r3)*yc,'b--')
-        ax2.plot((r4+r3)*xc,(r4+r3)*yc,'r--')
-        ax2.set_title('Star 2 (and 4) rel to 3')
+        if model.model == 'tdisc':
+            ax2.plot(xt,yt,'k')
+        else:
+            ax2.plot(r3*xc,r3*yc,'k')
+            ax2.plot((r2+r3)*xc,(r2+r3)*yc,'b--')
+
+        if model.model == 'quad2':
+            ax2.plot((r4+r3)*xc,(r4+r3)*yc,'r--')
+            ax2.plot(x4s,y4s,'r')
+            ax2.set_title('Star 2 (and 4) rel to 3')
+        else:
+            ax2.set_title('Star 2 rel to 3')
+
+        x2s -= x3s
+        y2s -= y3s
+        ax2.plot(x2s,y2s,'g')
+        if model.model != 'tdisc':
+            rsq = x2s**2+y2s**2
+            mins = np.r_[True, rsq[1:] < rsq[:-1]] & \
+                   np.r_[rsq[:-1] < rsq[1:], True]
+            ax2.plot(x2s[mins],y2s[mins],'.g')
+            ax2.plot(0,0,'ok',zorder=1)
+
         ax2.set_xlabel('X [AU]')
         ax2.set_ylabel('Y [AU]')
         ax2.set_xlim(-3*r3,3*r3)
         ax2.set_ylim(-3*r3,3*r3)
 
-        ax2.plot(r3*xc,r3*yc,'k')
-        ax2.plot((r2+r3)*xc,(r2+r3)*yc,'g--')
-
-        x2s -= x3s
-        y2s -= y3s
-        rsq = x2s**2+y2s**2
-        mins = np.r_[True, rsq[1:] < rsq[:-1]] & \
-               np.r_[rsq[:-1] < rsq[1:], True]
-        ax2.plot(x2s,y2s,'g')
-        ax2.plot(x2s[mins],y2s[mins],'.g')
-
-        if model.model == 'quad2':
-            ax2.plot(x4s,y4s,'r')
-        ax2.plot(0,0,'ok',zorder=1)
-
         plt.show()
-

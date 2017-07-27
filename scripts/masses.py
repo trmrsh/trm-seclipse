@@ -92,6 +92,32 @@ if __name__ == '__main__':
 
         print('Kepler test: {:6.3f} vs {:6.3f} [M1+M2]'.format(m12,M12))
 
+    elif model.model == 'tdisc':
+        a1 = model['a1'][0]
+        a2 = model['a2'][0]
+        adisc = model['adisc'][0]
+        ab = model['ab'][0]
+        Pb1 = model['Pb1'][0]
+        Pb2 = model['Pb2'][0]
+
+        # work out combined 1+2 mass from binary 1
+        m12 = ((a1+a2)*subs.RSUN/subs.AU)**3/(subs.DAY*Pb1/subs.YEAR)**2
+        m1 = a2/(a1+a2)*m12
+        m2 = a1/(a1+a2)*m12
+
+        print('Binary 1: M1+M2 = {:6.3f}, M1 = {:6.3f}, M2 = {:6.3f}'.format(
+            m12,m1,m2))
+
+        # Work out combined 1+2+3 mass from binary 2
+        m123 = ((ab+adisc)*subs.RSUN/subs.AU)**3/(subs.DAY*Pb2/subs.YEAR)**2
+        M12 = adisc/(ab+adisc)*m123
+        m3 = ab/(ab+adisc)*m123
+
+        print('Binary 2: M1+M2+M3 = {:6.3f}, M1+M2 = {:6.3f}, M3 = {:6.3f}'.format(
+            m123,M12,m3))
+
+        print('Kepler test: {:6.3f} vs {:6.3f} [M1+M2]'.format(m12,M12))
+
     else:
         print('Have not implemented model = {:s} yet'.format(model.model))
         exit(1)

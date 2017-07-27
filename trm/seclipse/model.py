@@ -11,6 +11,7 @@ import numpy as np
 from trm import orbits, subs
 from .core import Limb
 from . import ring
+from . import disc
 import time
 
 # first a few helper routines
@@ -321,6 +322,118 @@ class Model(dict):
          type of t0. 1 = time of periastron. 2 = time of eclipse.
          The latter is more directly fixed by the data
 
+    3) Name = 'tdisc'
+
+    Defines a light curve model for a triple star composed of two spheres in a
+    tight binary and an inclined circular disc as the third "star". The orbits
+    are arranged as the 'triple' model (see above). Some extra parameters are
+    needed to define the orientation of the disc and its surface brightness.
+    The disc is asseumed to maintain its orientation with respect to an inertial
+    frame as it orbits within the system. Think young stellar disc. 
+
+    Tdisc parameters::
+
+      r1        : (float)
+         radius of star 1 [solar]
+
+      r2        : (float)
+         radius of star 2 [solar]
+
+      rdisc     : (float)
+         radius of the disc [solar]
+
+      a1        : (float)
+         semi-major axis of star 1 around binary 1's CoM [solar]
+
+      a2        : (float)
+         semi-major axis of star 2 around binary 1's CoM [solar]
+
+      adisc     : (float)
+         semi-major axis of disc around system CoM [solar]
+
+      ab        : (float)
+         semi-major axis of binary 1 rel. to system CoM [solar]
+
+      eb1       : (float)
+         eccentricity of binary 1
+
+      eb2       : (float)
+         eccentricity of binary 2
+
+      omegab1   : (float)
+         argument of periapsis of binary 1 [degrees]
+
+      omegab2   : (float)
+         argument of periapsis of binary 2 [degrees]
+
+      Pb1       : (float)
+         period of binary 1 [days]
+
+      Pb2       : (float)
+         period of binary 2 [days]
+
+      ib1       : (float)
+         inclination of binary 1 [degrees]
+
+      ib2       : (float)
+         inclination of binary 2 [degrees]
+
+      idisc     : (float)
+         inclination of disc [degrees]
+
+      OMEGAb1   : (float)
+         longitude of ascending node of binary 1 [degrees]
+
+      OMEGAb2   : (float)
+         longitude of ascending node of binary 2 [degrees]
+
+      OMEGAdisc : (float)
+         longitude of ascending node of disc [degrees]
+
+      t0b1    : (float)
+         zeropoint of binary 1 [days]
+
+      t0b2    : (float)
+         zeropoint of binary 2 [days]
+
+      s1      : (float)
+         surface brightness of star 1
+
+      s2      : (float)
+         surface brightness of star 2
+
+      sdisc1  : (float)
+         surface brightness of disc [constant coefficient of poly]
+
+      sdisc2  : (float)
+         surface brightness of disc [linear coefficient of poly]
+
+      sdisc3  : (float)
+         surface brightness of disc [quadratic coefficient of poly]
+
+      third   : (float)
+         fractional "third" light, i.e. extra light from something other
+         than stellar components. Range 0 to 1.
+
+      limb1   : (float)
+         linear limb darkening coeff of star 1
+
+      limb2   : (float)
+         linear limb darkening coeff of star 2
+
+      n1      : (int)
+         number of annuli over face of star 1
+
+      n2      : (int)
+         number of annuli over face of star 2
+
+      ndisc   : (int)
+         number of annuli over face of disc
+
+      ttype   : (int)
+         type of t0. 1 = time of periastron. 2 = time of eclipse.
+         The latter is more directly fixed by the data
+
     """
 
     # dictionary of parameter name dictionaries keyed by the name of the model
@@ -405,7 +518,43 @@ class Model(dict):
              'n3' : (0, 2, 1000),
              'n4' : (0, 2, 1000),
              'ttype' : (0, 1, 2),
-             }
+             },
+
+        'tdisc' :
+            {'r1' : (0.02, 1.e-4, 20.),
+             'r2' : (0.02, 1.e-4, 20.),
+             'rdisc' : (0.02, 1.e-4, 20.),
+             'a1' : (0.01, 0., 400.),
+             'a2' : (0.01, 0., 400.),
+             'adisc' : (0.2,  0., 400.),
+             'ab' : (0.2,  0., 400.),
+             'eb1' : (0.01, 0., 0.999999),
+             'eb2' : (0.01, 0., 0.999999),
+             'omegab1' : (0.01, 0., 360.),
+             'omegab2' : (0.01, 0., 360.),
+             'Pb1' : (1.e-6, 0.2585, 0.2586),
+             'Pb2' : (1.e-6, 0.3, 50.),
+             'ib1' : (0.01, 85., 90.),
+             'ib2' : (0.01, 85., 90.),
+             'idisc' : (0.01, 85., 90.),
+             'OMEGAb1' : (0.05, 170., 190.),
+             'OMEGAb2' : (0.05, 170., 190.),
+             'OMEGAdisc' : (0.05, 0., 180.),
+             't0b1' : (0.01, 0.,1000.),
+             't0b2' : (0.01, 0.,1000.),
+             's1' : (1., 0., 5000.),
+             's2' : (1., 0., 5000.),
+             'sdisc1' : (1., 0., 5000.),
+             'sdisc2' : (1., 0., 5000.),
+             'sdisc3' : (1., 0., 5000.),
+             'third' : (0.05, 0., 1.),
+             'limb1' : (0.01, 0., 1.),
+             'limb2' : (0.01, 0., 1.),
+             'n1' : (0, 2, 1000),
+             'n2' : (0, 2, 1000),
+             'ndisc' : (0, 2, 1000),
+             'ttype' : (0, 1, 2),
+             },
         }
 
     def __init__(self, arg):
@@ -591,6 +740,25 @@ class Model(dict):
                 self['t0b2'][0], self['t0b3'][0], self['ttype'][0],
                 )
 
+        elif self.model == 'tdisc':
+            omegab1 = math.radians(self['omegab1'][0])
+            omegab2 = math.radians(self['omegab2'][0])
+            OMEGAb1 = math.radians(self['OMEGAb1'][0])
+            OMEGAb2 = math.radians(self['OMEGAb2'][0])
+            ib1     = math.radians(self['ib1'][0])
+            ib2     = math.radians(self['ib2'][0])
+            a1      = sol2au(self['a1'][0])
+            a2      = sol2au(self['a2'][0])
+            adisc   = sol2au(self['adisc'][0])
+            ab      = sol2au(self['ab'][0])
+
+            return orbits.model.triplePos(
+                times, a1, a2, adisc, ab, self['eb1'][0],
+                self['eb2'][0], omegab1, omegab2,
+                self['Pb1'][0], self['Pb2'][0],
+                ib1, ib2, OMEGAb1, OMEGAb2,
+                self['t0b1'][0], self['t0b2'][0], self['ttype'][0],
+                )
         else:
             raise Exception(
                 'Model = {:s} not recognised'.format(self.model)
@@ -740,6 +908,61 @@ class Model(dict):
             total = s1*tflux1+s2*tflux2+s3*tflux3+s4*tflux4
             lc = third*total + (1-third)*lc
 
+        elif self.model == 'tdisc':
+
+            limb1 = Limb(Limb.POLY, self['limb1'][0])
+            limb2 = Limb(Limb.POLY, self['limb2'][0])
+
+            s1 = self['s1'][0]*(subs.RSUN/subs.AU)**2
+            s2 = self['s2'][0]*(subs.RSUN/subs.AU)**2
+            sdisc1 = self['sdisc1'][0]*(subs.RSUN/subs.AU)**2
+            sdisc2 = self['sdisc2'][0]*(subs.RSUN/subs.AU)**2
+            sdisc3 = self['sdisc3'][0]*(subs.RSUN/subs.AU)**2
+
+            class Bright:
+                def __init__(self, s1, s2, s3):
+                    self.s1 = s1
+                    self.s2 = s2
+                    self.s3 = s3
+
+                def __call__(self, r):
+                    return self.s1+self.s2*r+self.s3*r**2
+
+            bright = Bright(sdisc1, sdisc2, sdisc3)
+
+            r1 = sol2au(self['r1'][0])
+            r2 = sol2au(self['r2'][0])
+            rdisc = sol2au(self['rdisc'][0])
+            idisc = math.radians(self['idisc'][0])
+            OMEGAdisc = math.radians(self['OMEGAdisc'][0])
+
+            # Calculate arrays of annuli (radius and flux contribution) for
+            # each sphere as an input to seclipse.disc.flux2 and
+            # seclipse.disc.flux2
+            rings1, fluxes1, tflux1 = ring.rfinit(r1, limb1, self['n1'][0])
+            rings2, fluxes2, tflux2 = ring.rfinit(r2, limb2, self['n2'][0])
+            xd, yd, fd, tfd = disc.rfinit(rdisc, bright, self['ndisc'][0])
+
+            # project the disc arrays
+            xd, yd = disc.project(xd, yd, idisc, OMEGAdisc)
+
+            # Calculate positions of stellar CoMs at 'expanded' times
+            # to allow for exposure smearing
+            tnew = ring.expand(ts,tes,nds)
+            (x1s,y1s,z1s),(x2s,y2s,z2s),(xds,yds,zds) = self.paths(tnew)
+
+            # Calculate light curve
+            lnew = disc.lc2(
+                xd, yd, fd, tfd,
+                r1, rings1, fluxes1, tflux1, s1, x1s-xds, y1s-yds, z1s-zds,
+                r2, rings2, fluxes2, tflux2, s2, x2s-xds, y2s-yds, z2s-zds
+                )
+            lc = ring.compress(lnew, nds)
+
+            # add "third" light
+            total = s1*tflux1+s2*tflux2+tfd
+            lc = third*total + (1-third)*lc
+
         else:
             raise Exception(
                 'Model = {:s} not recognised'.format(self.model)
@@ -777,7 +1000,7 @@ class Model(dict):
         """
 
         if self.model == 'triple':
-            flag = \
+            return \
                 self['r1'][0] > 0 and self['r2'][0] > 0 and \
                 self['r3'][0] > 0 and \
                 self['a1'][0] > 0 and self['a2'][0] > 0 and \
@@ -794,7 +1017,7 @@ class Model(dict):
                 self['limb3'][0] >= 0. and self['limb3'][0] <= 1.
 
         elif self.model == 'quad2':
-            flag = \
+            return \
                 self['r1'][0] > 0 and self['r2'][0] > 0 and \
                 self['r3'][0] > 0 and self['r4'][0] > 0 and \
                 self['a1'][0] > 0 and self['a2'][0] > 0 and \
@@ -816,11 +1039,62 @@ class Model(dict):
                 self['limb3'][0] >= 0. and self['limb3'][0] <= 1. and \
                 self['limb4'][0] >= 0. and self['limb4'][0] <= 1.
 
+        elif self.model == 'tdisc':
+
+            # complicated piece to check surface brightness of disc is >= 0
+            # for all scaled radii (x) from 0 to 1
+            sd1 = self['sdisc1'][0]
+            if sd1 < 0:
+                # negative at disc centre
+                return False
+
+            sd2 = self['sdisc2'][0]
+            sd3 = self['sdisc3'][0]
+            if sd3 == 0.:
+                if sd1 + sd2 < 0:
+                    # negative at disc edge
+                    return False
+            else:
+                # x pos of extremum
+                xext = -sd2/(2*sd3)
+                if sd3 > 0:
+                    # its a minimum
+                    if xext > 1:
+                        # minimum beyond disc edge, so just check
+                        # value at edge
+                        if sd1+sd2+sd3 < 0.:
+                            return False
+                    elif xext > 0:
+                        # minimum within disc. check value at minimum
+                        if sd1+sd2*xext+sd3*xext**2 < 0.:
+                            return False
+                else:
+                    # its a maximum. If at negative x, minimum must be at x=1.
+                    # If at 0 < x < 1, minimum must be at x=0 or 1, but we have already
+                    # tested x=0. If its at x >= 1, we must be OK since the value at
+                    # x=1 must be > the value at x=0 which is already OK.
+                    if xext < 1 and sd1+sd2+sd3 < 0.:
+                        return False
+
+            # disc test passed, now the rest of them
+            return \
+                self['r1'][0] > 0 and self['r2'][0] > 0 and \
+                self['rdisc'][0] > 0 and \
+                self['a1'][0] > 0 and self['a2'][0] > 0 and \
+                self['adisc'][0] > 0 and self['ab'][0] > 0 and \
+                self['r1'][0] + self['r2'][0] < (self['a1'][0] + self['a2'][0])*(1-self['eb1'][0]) and \
+                self['eb1'][0] >= 0. and self['eb1'][0] < 1. and \
+                self['eb2'][0] >= 0. and self['eb2'][0] < 1. and \
+                self['Pb1'][0] > 0. and self['Pb2'][0] > 0. and \
+                self['s1'][0] >= 0. and self['s2'][0] >= 0. and \
+                self['third'][0] >= 0. and self['third'][0] <= 1. and \
+                self['limb1'][0] >= 0. and self['limb1'][0] <= 1. and \
+                self['limb2'][0] >= 0. and self['limb2'][0] <= 1.
+
         else:
             raise Exception(
                 'Model = {:s} not recognised'.format(self.model)
                 )
-        return flag
 
 
     def write(self,fobj,prefix=''):
