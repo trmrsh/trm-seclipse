@@ -229,7 +229,7 @@ weighting factor for chi**2, sub-division factor for exposure smearing.
             ax2.plot(xt,yt,'k')
         else:
             ax2.plot(r3*xc,r3*yc,'k')
-            ax2.plot((r2+r3)*xc,(r2+r3)*yc,'b--')
+            ax2.plot((r2+r3)*xc,(r2+r3)*yc,'g--')
 
         if model.model == 'quad2':
             ax2.plot((r4+r3)*xc,(r4+r3)*yc,'r--')
