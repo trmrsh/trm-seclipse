@@ -10,6 +10,8 @@ import numexpr as ne
 import trm.subs as subs
 from trm.subs import Vec3
 from . import ring
+from . import ring
+from ._seclipse import dflux2
 
 def rfinit(r, bright, n):
     """Initialises the grid elements and flux contributions over the face of a
@@ -83,6 +85,30 @@ def rfinit(r, bright, n):
 
     return (x, y, f, f.sum())
 
+
+def d2s_axes(iangle, OMEGA):
+    """
+    Returns x,y,z basis vectors defined by the disc in terms of the sky axes.
+    x of the disc is in the plane of the sky along the line of nodes. If
+    OMEGA=0 it points North. The z-axis is defined to be perpendicular to the
+    the disc and towards the observer for iangle < 90. The y-axis is defined
+    so that a right-handed Cartesian triad emerges.  iangle is the angle
+    between the disc's z axis and the line of sight.
+
+    The sky axes are defined by due West = x, due North = y, towards Earth (line of sight)
+    = z.
+
+    This returns a tuple of Vec3 objects (xd,yd,zd)
+    """
+    coso, sino = math.cos(OMEGA), math.sin(OMEGA)
+    cosi, sini = math.cos(iangle), math.sin(iangle)
+
+    xd = Vec3(-sino, coso, 0)
+    yd = Vec3(-cosi*coso, -cosi*sino, -sini)
+    zd = Vec3(-sini*coso, -sini*sino,  cosi)
+
+    return (xd,yd,zd)
+
 def project(x, y, iangle, OMEGA):
     """
     Given the x, y coordinates of elements covering a disc face as produced by
@@ -93,83 +119,33 @@ def project(x, y, iangle, OMEGA):
 
     Sky axes: due West = x, due North = y, towards Earth = z.
     """
-    # express axes referenced with respect to the disc in terms of axes
-    # referenced with respect to the sky. oaxis is the orbital / symmetry axis
-    # of the disc, naxis is the axis of the lines of nodes (by definition in
-    # the plane of the sky) while paxis [p for perpendicular] is such that
-    # naxis / paxis / oaxis are a right-handed Cartesian set, i.e. paxis =
-    # oaxis x naxis [cross product]
-    #
-    # The output positions are then given by naxis*x + paxis*y and we are only interested
-    # in the x and y components.
-    naxis = Vec3(-math.sin(OMEGA), math.cos(OMEGA), 0)
-    oaxis = Vec3(-math.sin(iangle)*math.cos(OMEGA), -math.sin(iangle)*math.sin(OMEGA), math.cos(iangle))
-    paxis = subs.cross(oaxis, naxis)
+    xd,yd,zd = d2s_axes(iangle, OMEGA)
+    return (x*xd.x + y*yd.x, x*xd.y + y*yd.y)
 
-    return (x*naxis.x + y*paxis.x, x*naxis.y + y*paxis.y)
-
-def flux2(x, y, f, tf, r1, x1, y1, z1, r2, x2, y2, z2):
-    """Computes the flux from a disc potentially occulted by 2 spheres. The x and y arrays
-    here are best computed from "rfinit" followed by "project".
-
-    Arguments::
-
-      x   : (array)
-         X-ordinates of disc elements on plane of sky
-
-      y   : (array)
-         Y-ordinates of disc elements on plane of sky
-
-      f   : (array)
-         Flux contributions of disc elements
-
-      tf  : (float)
-         Total flux from disc.
-
-      r1  : (float)
-         radius of first sphere
-
-      x1  : (float)
-         X position of first sphere relative to centre of disc
-
-      y1  : (float)
-         Y position of first sphere relative to centre of disc
-
-      z1  : (float)
-         Z position of first sphere relative to centre of disc
-
-      r2  : (float)
-         radius of second sphere
-
-      x2  : (float)
-         X position of second sphere relative to centre of disc
-
-      y2  : (float)
-         Y position of second sphere relative to centre of disc
-
-      z2  : (float)
-         Z position of second sphere relative to centre of disc. Positive
-         Z is towards Earth.
-
-    Returns a single number, the total visible flux from the disc.
-
+def d2s_axes(iangle, OMEGA):
     """
+    Returns x,y,z basis vectors defined by the disc in terms of the sky axes.
+    x of the disc is in the plane of the sky along the line of nodes. If
+    OMEGA=0 it points North. The z-axis is defined to be perpendicular to the
+    the disc and towards the observer for iangle < 90. The y-axis is defined
+    so that a right-handed Cartesian triad emerges.  iangle is the angle
+    between the disc's z axis and the line of sight.
 
-    if z1 > 0 and z2 > 0:
-        # both spheres potentially can eclipse disc
-        flux = f[((x-x1)**2 + (y-y1)**2 > r1**2) & ((x-x2)**2 + (y-y2)**2 > r2**2)].sum()
-    elif z1 > 0:
-        # only sphere 1 can occult the disc
-        flux = f[(x-x1)**2 + (y-y1)**2 > r1**2].sum()
-    elif z2 > 0:
-        # only sphere 2 can occult the disc
-        flux = f[(x-x2)**2 + (y-y2)**2 > r2**2].sum()
-    else:
-        # no occultation of disc
-        flux = tf
-    return flux
+    The sky axes are defined by due West = x, due North = y, towards Earth (line of sight)
+    = z.
 
-def lc2(x, y, f, tf,
+    This returns a tuple of Vec3 objects (xd,yd,zd)
+    """
+    coso, sino = math.cos(OMEGA), math.sin(OMEGA)
+    cosi, sini = math.cos(iangle), math.sin(iangle)
+
+    xd = Vec3(-sino, coso, 0)
+    yd = Vec3(-cosi*coso, -cosi*sino, -sini)
+    zd = Vec3(-sini*coso, -sini*sino,  cosi)
+
+    return (xd,yd,zd)
+
+def lc2(x, y, f, tf, rd,
         r1, rings1, fluxes1, tflux1, s1, x1s, y1s, z1s,
         r2, rings2, fluxes2, tflux2, s2, x2s, y2s, z2s):
     """"Wrapper around 'flux2' to run over lots of positions specified in the
@@ -187,7 +163,7 @@ def lc2(x, y, f, tf,
 
     for i in range(n):
         # compute what we see from the disc
-        fdisc = flux2(x, y, f, tf, r1, x1s[i], y1s[i], z1s[i], r2, x2s[i], y2s[i], z2s[i])
+        fdisc = dflux2(x, y, f, tf, rd, r1, x1s[i], y1s[i], z1s[i], r2, x2s[i], y2s[i], z2s[i])
 
         # compute what we see from the two stars. we ignore the
         # possibility of the disc occulting the stars.

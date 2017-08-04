@@ -808,7 +808,9 @@ def lc4(r, rings, fluxes, tflux, s1, s2, s3, s4, p1s, p2s, p3s, p4s):
 
     return lc
 
+@cython.cdivision(True)
 @cython.boundscheck(False)
+@cython.wraparound(False)
 def expand(np.ndarray[DTYPE_t, ndim=1] ts, np.ndarray[DTYPE_t, ndim=1] tes,
            np.ndarray[ITYPE_t, ndim=1] nds):
     """Expands a set of times, exposures and integer sub-division factors into
@@ -818,14 +820,15 @@ def expand(np.ndarray[DTYPE_t, ndim=1] ts, np.ndarray[DTYPE_t, ndim=1] tes,
     and spanning a length tes[i].
     """
 
-    cdef unsigned int i, n
+    cdef unsigned int i, n, j
     cdef np.ndarray[DTYPE_t, ndim=1] tout = np.empty(nds.sum(), dtype=DTYPE)
 
     # counter
     n = 0
     for i in range(len(ts)):
         if nds[i] > 1:
-            tout[n:n+nds[i]] = np.linspace(ts[i]-tes[i]/2.,ts[i]+tes[i]/2.,nds[i])
+            for j in range(nds[i]):
+                tout[n+j] = ts[i]+tes[i]*(j-(nds[i]-1)/2)/(nds[i]-1)
         else:
             tout[n] = ts[i]
         n += nds[i]
@@ -834,6 +837,7 @@ def expand(np.ndarray[DTYPE_t, ndim=1] ts, np.ndarray[DTYPE_t, ndim=1] tes,
 
 @cython.cdivision(True)
 @cython.boundscheck(False)
+@cython.wraparound(False)
 def compress(np.ndarray[DTYPE_t, ndim=1] fs, np.ndarray[ITYPE_t, ndim=1] nds):
     """Compresses a set of values (typically fluxes) assumed evaluated at a
     series of expanded times as returned by 'expand' with integer sub-division
@@ -856,8 +860,93 @@ def compress(np.ndarray[DTYPE_t, ndim=1] fs, np.ndarray[ITYPE_t, ndim=1] nds):
             n += nds[i]-1
             fout[i] = sum / (nds[i]-1)
         else:
-            fout[n] = fs[i]
+            fout[i] = fs[n]
             n += 1
 
     return fout
 
+
+@cython.wraparound(False)
+@cython.boundscheck(False)
+def dflux2(np.ndarray[DTYPE_t, ndim=1] x, np.ndarray[DTYPE_t, ndim=1] y, np.ndarray[DTYPE_t, ndim=1] f,
+           double tf, double rd,
+           double r1, double x1, double y1, double z1, double r2, double x2, double y2, double z2):
+    """Computes the flux from a disc potentially occulted by 2 spheres. The x and y arrays
+    should be computed from "disc.rfinit" followed by "disc.project".
+
+    Arguments::
+
+      x   : (array)
+         X-ordinates of disc elements on plane of sky
+
+      y   : (array)
+         Y-ordinates of disc elements on plane of sky
+
+      f   : (array)
+         Flux contributions of disc elements
+
+      tf  : (float)
+         Total flux from disc.
+
+      rd  : (float)
+         Radius of disc (used as a crude time saver)
+
+      r1  : (float)
+         radius of first sphere
+
+      x1  : (float)
+         X position of first sphere relative to centre of disc
+
+      y1  : (float)
+         Y position of first sphere relative to centre of disc
+
+      z1  : (float)
+         Z position of first sphere relative to centre of disc
+
+      r2  : (float)
+         radius of second sphere
+
+      x2  : (float)
+         X position of second sphere relative to centre of disc
+
+      y2  : (float)
+         Y position of second sphere relative to centre of disc
+
+      z2  : (float)
+         Z position of second sphere relative to centre of disc. Positive
+         Z is towards Earth.
+
+    Returns a single number, the total visible flux from the disc.
+
+    """
+
+    cdef unsigned int i, n = len(f)
+    cdef double r1sq, r2sq, xsq, flux = 0.
+
+    # The second condition in the next two lines is a minimal condition for a
+    # sphere to occult the disc. i.e. if it is not satisfied, there will be no
+    # eclipse, but if it is satisfied, there may or may not be an eclipse.  It
+    # is added to save time because quite often this routine is likely to be
+    # called with the objects quite far apart on the sky
+    occ1 = z1 > 0 and x1**2+y1**2 < (rd+r1)**2
+    occ2 = z2 > 0 and x2**2+y2**2 < (rd+r2)**2
+
+    r1sq = r1**2
+    r2sq = r2**2
+
+    if occ1 and occ2:
+        for i in range(n):
+            if (x[i]-x1)**2+(y[i]-y1)**2 > r1sq and (x[i]-x2)**2+(y[i]-y2)**2 > r2sq:
+                flux += f[i]
+    elif occ1:
+        for i in range(n):
+            if (x[i]-x1)**2+(y[i]-y1)**2 > r1sq:
+                flux += f[i]
+    elif occ2:
+        for i in range(n):
+            if (x[i]-x2)**2+(y[i]-y2)**2 > r2sq:
+                flux += f[i]
+    else:
+        # no occultation of disc
+        flux = tf
+    return flux

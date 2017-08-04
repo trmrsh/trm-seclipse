@@ -12,7 +12,7 @@ Many of the routines in this section use Cython for speed.
 
 import numpy as np
 import math
-from ._seclipse import *
+from ._seclipse import lc3, lc4, flux2, flux3, flux4
 
 def rfinit(r, limb, n):
     """Initialises radii and fluxes from set of annuli covering the visible face

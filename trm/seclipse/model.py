@@ -11,6 +11,7 @@ import numpy as np
 from trm import orbits, subs
 from .core import Limb
 from . import ring
+from ._seclipse import expand, compress
 from . import disc
 import time
 
@@ -439,7 +440,7 @@ class Model(dict):
     # dictionary of parameter name dictionaries keyed by the name of the model
     # 'triple', 'quad2'. For each parameter there is a 3-element tuple giving
     # the amount to vary it by when initialising a chain, along with upper and
-    # lower bounds, the latter are used by the 'Anneal' method.
+    # lower bounds
 
     PARAMS = {\
         'triple' :
@@ -452,16 +453,16 @@ class Model(dict):
              'ab' : (0.2,  0., 400.),
              'eb1' : (0.01, 0., 0.999999),
              'eb2' : (0.01, 0., 0.999999),
-             'omegab1' : (0.01, 0., 360.),
-             'omegab2' : (0.01, 0., 360.),
-             'Pb1' : (1.e-6, 0.2585, 0.2586),
-             'Pb2' : (1.e-6, 0.3, 50.),
-             'ib1' : (0.01, 85., 90.),
-             'ib2' : (0.01, 85., 90.),
-             'OMEGAb1' : (0.05, 170., 190.),
-             'OMEGAb2' : (0.05, 170., 190.),
+             'omegab1' : (1, 0., 360.),
+             'omegab2' : (1, 0., 360.),
+             'Pb1' : (1.e-5, 0.2585, 0.2586),
+             'Pb2' : (1.e-2, 0.3, 50.),
+             'ib1' : (0.1, 85., 90.),
+             'ib2' : (0.1, 85., 90.),
+             'OMEGAb1' : (1, 170., 190.),
+             'OMEGAb2' : (1, 170., 190.),
              't0b1' : (0.01, 0.,1000.),
-             't0b2' : (0.01, 0.,1000.),
+             't0b2' : (0.1, 0.,1000.),
              's1' : (1., 0., 5000.),
              's2' : (1., 0., 5000.),
              's3' : (1., 0., 5000.),
@@ -489,21 +490,21 @@ class Model(dict):
              'eb1' : (0.01, 0., 0.999999),
              'eb2' : (0.01, 0., 0.999999),
              'eb3' : (0.01, 0., 0.999999),
-             'omegab1' : (0.01, 0., 360.),
-             'omegab2' : (0.01, 0., 360.),
-             'omegab3' : (0.01, 0., 360.),
-             'Pb1' : (1.e-6, 0.2585, 0.2586),
-             'Pb2' : (1.e-6, 0.3, 50.),
-             'Pb3' : (0.001, 200., 210.),
-             'ib1' : (0.01, 85., 90.),
-             'ib2' : (0.01, 85., 90.),
-             'ib3' : (0.01, 75., 90.),
-             'OMEGAb1' : (0.05, 170., 190.),
-             'OMEGAb2' : (0.05, 170., 190.),
-             'OMEGAb3' : (0.05, 170., 190.),
+             'omegab1' : (1, 0., 360.),
+             'omegab2' : (1, 0., 360.),
+             'omegab3' : (1, 0., 360.),
+             'Pb1' : (1.e-5, 0.2585, 0.2586),
+             'Pb2' : (1.e-3, 0.3, 50.),
+             'Pb3' : (1.e-2, 200., 210.),
+             'ib1' : (0.1, 85., 90.),
+             'ib2' : (0.1, 85., 90.),
+             'ib3' : (0.1, 75., 90.),
+             'OMEGAb1' : (1, 170., 190.),
+             'OMEGAb2' : (1, 170., 190.),
+             'OMEGAb3' : (1, 170., 190.),
              't0b1' : (0.01, 0.,1000.),
-             't0b2' : (0.01, 0.,1000.),
-             't0b3' : (0.02, 0.,1000.),
+             't0b2' : (0.02, 0.,1000.),
+             't0b3' : (0.1, 0.,1000.),
              's1' : (1., 0., 5000.),
              's2' : (1., 0., 5000.),
              's3' : (1., 0., 5000.),
@@ -530,23 +531,26 @@ class Model(dict):
              'ab' : (0.2,  0., 400.),
              'eb1' : (0.01, 0., 0.999999),
              'eb2' : (0.01, 0., 0.999999),
-             'omegab1' : (0.01, 0., 360.),
-             'omegab2' : (0.01, 0., 360.),
-             'Pb1' : (1.e-6, 0.2585, 0.2586),
-             'Pb2' : (1.e-6, 0.3, 50.),
-             'ib1' : (0.01, 85., 90.),
-             'ib2' : (0.01, 85., 90.),
-             'idisc' : (0.01, 85., 90.),
-             'OMEGAb1' : (0.05, 170., 190.),
-             'OMEGAb2' : (0.05, 170., 190.),
-             'OMEGAdisc' : (0.05, 0., 180.),
+             'omegab1' : (1, 0., 360.),
+             'omegab2' : (1, 0., 360.),
+             'Pb1' : (1.e-5, 0.2585, 0.2586),
+             'Pb2' : (1.e-2, 0.3, 50.),
+             'ib1' : (0.1, 85., 90.),
+             'ib2' : (0.1, 85., 90.),
+             'idisc' : (0.1, 85., 90.),
+             'OMEGAb1' : (1, 170., 190.),
+             'OMEGAb2' : (1, 170., 190.),
+             'OMEGAdisc' : (1, 0., 180.),
              't0b1' : (0.01, 0.,1000.),
-             't0b2' : (0.01, 0.,1000.),
+             't0b2' : (0.1, 0.,1000.),
              's1' : (1., 0., 5000.),
              's2' : (1., 0., 5000.),
              'sdisc1' : (1., 0., 5000.),
              'sdisc2' : (1., 0., 5000.),
              'sdisc3' : (1., 0., 5000.),
+             'sdisc4' : (1., 0., 5000.),
+             'sdisc5' : (1., 0., 5000.),
+             'sdisc6' : (1., 0., 5000.),
              'third' : (0.05, 0., 1.),
              'limb1' : (0.01, 0., 1.),
              'limb2' : (0.01, 0., 1.),
@@ -856,12 +860,12 @@ class Model(dict):
 
             # Calculate positions of stellar CoMs at 'expanded' times
             # to allow for exposure smearing
-            tnew = ring.expand(ts,tes,nds)
+            tnew = expand(ts,tes,nds)
             p1s, p2s, p3s = self.paths(tnew)
 
             # Calculate light curve
             lnew = ring.lc3(r, rings, fluxes, tflux, s1, s2, s3, p1s, p2s, p3s)
-            lc = ring.compress(lnew, nds)
+            lc = compress(lnew, nds)
 
             # add "third" light
             total = s1*tflux1+s2*tflux2+s3*tflux3
@@ -897,12 +901,12 @@ class Model(dict):
             tflux = (tflux1,tflux2,tflux3,tflux4)
 
             # Calculate positions of stellar CoMs
-            tnew = ring.expand(ts,tes,nds)
+            tnew = expand(ts,tes,nds)
             p1s, p2s, p3s, p4s = self.paths(tnew)
 
             # Calculate light curve
             lnew = ring.lc4(r, rings, fluxes, tflux, s1, s2, s3, s4, p1s, p2s, p3s, p4s)
-            lc = ring.compress(lnew, nds)
+            lc = compress(lnew, nds)
 
             # add "third" light
             total = s1*tflux1+s2*tflux2+s3*tflux3+s4*tflux4
@@ -918,17 +922,23 @@ class Model(dict):
             sdisc1 = self['sdisc1'][0]*(subs.RSUN/subs.AU)**2
             sdisc2 = self['sdisc2'][0]*(subs.RSUN/subs.AU)**2
             sdisc3 = self['sdisc3'][0]*(subs.RSUN/subs.AU)**2
+            sdisc4 = self['sdisc4'][0]*(subs.RSUN/subs.AU)**2
+            sdisc5 = self['sdisc5'][0]*(subs.RSUN/subs.AU)**2
+            sdisc6 = self['sdisc6'][0]*(subs.RSUN/subs.AU)**2
 
             class Bright:
-                def __init__(self, s1, s2, s3):
-                    self.s1 = s1
-                    self.s2 = s2
-                    self.s3 = s3
+                def __init__(self, sd1, sd2, sd3, sd4, sd5, sd6):
+                    self.sd1 = sd1
+                    self.sd2 = sd2
+                    self.sd3 = sd3
+                    self.sd4 = sd4
+                    self.sd5 = sd5
+                    self.sd6 = sd6
 
                 def __call__(self, r):
-                    return self.s1+self.s2*r+self.s3*r**2
+                    return self.sd1+r*(self.sd2+r*(self.sd3+r*(self.sd4+r*(self.sd5+self.sd6*r))))
 
-            bright = Bright(sdisc1, sdisc2, sdisc3)
+            bright = Bright(sdisc1, sdisc2, sdisc3, sdisc4, sdisc5, sdisc6)
 
             r1 = sol2au(self['r1'][0])
             r2 = sol2au(self['r2'][0])
@@ -948,16 +958,16 @@ class Model(dict):
 
             # Calculate positions of stellar CoMs at 'expanded' times
             # to allow for exposure smearing
-            tnew = ring.expand(ts,tes,nds)
+            tnew = expand(ts,tes,nds)
             (x1s,y1s,z1s),(x2s,y2s,z2s),(xds,yds,zds) = self.paths(tnew)
 
             # Calculate light curve
             lnew = disc.lc2(
-                xd, yd, fd, tfd,
+                xd, yd, fd, tfd, rdisc,
                 r1, rings1, fluxes1, tflux1, s1, x1s-xds, y1s-yds, z1s-zds,
                 r2, rings2, fluxes2, tflux2, s2, x2s-xds, y2s-yds, z2s-zds
                 )
-            lc = ring.compress(lnew, nds)
+            lc = compress(lnew, nds)
 
             # add "third" light
             total = s1*tflux1+s2*tflux2+tfd
@@ -1041,55 +1051,54 @@ class Model(dict):
 
         elif self.model == 'tdisc':
 
-            # complicated piece to check surface brightness of disc is >= 0
-            # for all scaled radii (x) from 0 to 1
-            sd1 = self['sdisc1'][0]
-            if sd1 < 0:
-                # negative at disc centre
+            # elementary checks
+            if self['r1'][0] <= 0 or self['r2'][0] <= 0 or \
+                    self['rdisc'][0] <= 0 or self['a1'][0] <= 0 or \
+                    self['a2'][0] <= 0 or self['adisc'][0] <= 0 or \
+                    self['ab'][0] <= 0 or \
+                    self['r1'][0] + self['r2'][0] >= (self['a1'][0] + self['a2'][0])*(1-self['eb1'][0]) or \
+                    self['eb1'][0] < 0. or self['eb1'][0] >= 1. or \
+                    self['eb2'][0] < 0. or self['eb2'][0] >= 1. or \
+                    self['Pb1'][0] <= 0. or self['Pb2'][0] <= 0. or \
+                    self['s1'][0] < 0. or self['s2'][0] < 0. or \
+                    self['third'][0] < 0. or self['third'][0] > 1. or \
+                    self['limb1'][0] < 0. or self['limb1'][0] > 1. or \
+                    self['limb2'][0] < 0. or self['limb2'][0] > 1.:
                 return False
 
+            # Now check that the surface brightness of disc is >= 0 for all
+            # scaled radii (x) from 0 to 1.
+
+            # first the centre.
+            sd1 = self['sdisc1'][0]
+            if sd1 < 0:
+                return False
+
+            # then the outer edge
             sd2 = self['sdisc2'][0]
             sd3 = self['sdisc3'][0]
-            if sd3 == 0.:
-                if sd1 + sd2 < 0:
-                    # negative at disc edge
-                    return False
-            else:
-                # x pos of extremum
-                xext = -sd2/(2*sd3)
-                if sd3 > 0:
-                    # its a minimum
-                    if xext > 1:
-                        # minimum beyond disc edge, so just check
-                        # value at edge
-                        if sd1+sd2+sd3 < 0.:
-                            return False
-                    elif xext > 0:
-                        # minimum within disc. check value at minimum
-                        if sd1+sd2*xext+sd3*xext**2 < 0.:
-                            return False
-                else:
-                    # its a maximum. If at negative x, minimum must be at x=1.
-                    # If at 0 < x < 1, minimum must be at x=0 or 1, but we have already
-                    # tested x=0. If its at x >= 1, we must be OK since the value at
-                    # x=1 must be > the value at x=0 which is already OK.
-                    if xext < 1 and sd1+sd2+sd3 < 0.:
+            sd4 = self['sdisc4'][0]
+            sd5 = self['sdisc5'][0]
+            sd6 = self['sdisc6'][0]
+            if sd1+sd2+sd3+sd4+sd5+sd6 < 0:
+                return False
+
+            def bright(r, sd1, sd2, sd3, sd4, sd5, sd6):
+                return sd1+r*(sd2+r*(sd3+r*(sd4+r*(sd5+sd6*r))))
+
+            # Now search for turning points. If these are real and in range (0
+            # to 1) we check that they are not negative.
+            p = [5*sd6,4*sd5,3*sd4,2*sd3,sd2]
+            roots = np.roots(p)
+            roots = roots[np.isreal(roots)]
+            for root in roots:
+                x = root.real
+                if x > 0 and x < 1:
+                    if bright(x, sd1, sd2, sd3, sd4, sd5, sd6) < 0:
                         return False
 
-            # disc test passed, now the rest of them
-            return \
-                self['r1'][0] > 0 and self['r2'][0] > 0 and \
-                self['rdisc'][0] > 0 and \
-                self['a1'][0] > 0 and self['a2'][0] > 0 and \
-                self['adisc'][0] > 0 and self['ab'][0] > 0 and \
-                self['r1'][0] + self['r2'][0] < (self['a1'][0] + self['a2'][0])*(1-self['eb1'][0]) and \
-                self['eb1'][0] >= 0. and self['eb1'][0] < 1. and \
-                self['eb2'][0] >= 0. and self['eb2'][0] < 1. and \
-                self['Pb1'][0] > 0. and self['Pb2'][0] > 0. and \
-                self['s1'][0] >= 0. and self['s2'][0] >= 0. and \
-                self['third'][0] >= 0. and self['third'][0] <= 1. and \
-                self['limb1'][0] >= 0. and self['limb1'][0] <= 1. and \
-                self['limb2'][0] >= 0. and self['limb2'][0] <= 1.
+            # All tests passed ...
+            return True
 
         else:
             raise Exception(
