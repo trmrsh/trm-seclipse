@@ -84,7 +84,7 @@ class Lnpost(object):
         # update the model using the current parameters
         self.m.update(p)
 
-        if self.m.ok():
+        if self.m.adjust() and self.m.ok():
             prior = self.m.prior()
             if prior < 1.e20:
 
@@ -206,7 +206,7 @@ if __name__ == '__main__':
         while n < nwalker:
             p = np.random.normal(start,sigma)
             model.update(p)
-            if model.ok():
+            if model.adjust() and model.ok():
                 walkers.append(p)
                 n += 1
                 if n > 10*nwalker:
@@ -269,6 +269,7 @@ if __name__ == '__main__':
                 lnpmax = lnps.max()
                 best = walkers[np.argmax(lnps)]
                 model.update(best)
+                model.adjust()
                 lnpri = model.prior()
                 chisq = -soft*(2*lnpmax+lnpri)
                 print('New best model. -2*ln(pprob),-2*ln(pri),chisq =',\

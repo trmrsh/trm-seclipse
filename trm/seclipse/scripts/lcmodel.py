@@ -1,27 +1,29 @@
 #!/usr/bin/env python
 
-"""
-script to compute and plot the eclipse of limb-darkened spheres. It either
-does so given an already existing data file as a template or on a
-regularly-spaced set of times. In the latter case it will also plot a
-representation of the paths of the spheres.
-"""
-
-from __future__ import division
-
 import sys
 import math
 import time
 import numpy as np
+import matplotlib
+matplotlib.use('qt5agg')
 import matplotlib.pyplot as plt
 import trm.subs.input as inp
 from trm import seclipse, orbits, subs
 from trm.subs import Vec3
 
-if __name__ == '__main__':
+def lcmodel(args=None):
+    """``lcmodel model ldat data norm (time1 time2 ntime texp ndiv) plot pres
+    ppath [save (reject dout)]``
+
+    Compute and plots the eclipse of limb-darkened spheres. It either
+    does so given an already existing data file as a template or on a
+    regularly-spaced set of times. In the latter case it will also plot a
+    representation of the paths of the spheres.
+    """
 
     # generate arguments
-    inpt = inp.Input('PYTHON_TRIPLE_ENV', '.pytriple', sys.argv)
+    print(args)
+    inpt = inp.Input('PYTHON_TRIPLE_ENV', '.pytriple', args)
 
     # register parameters
     inpt.register('model', inp.Input.LOCAL, inp.Input.PROMPT)
@@ -86,6 +88,8 @@ if __name__ == '__main__':
             rej = np.abs((fs-fit)/fes) > scale*reject
 
         if plot:
+            ts += 2454833 - 2400000
+
             plt.plot(ts,fs,'.g')
             plt.plot(ts,fit,'r')
             if pres:
@@ -117,7 +121,7 @@ weighting factor for chi**2, sub-division factor for exposure smearing.
                                '%14.9f %9.3e %8.6f %8.6f %4.2f %2d',
                                header=header)
 
-            plt.xlabel('Time (days)')
+            plt.xlabel('Time [MJD]')
             plt.ylabel('Flux')
             plt.show()
 
@@ -128,6 +132,12 @@ weighting factor for chi**2, sub-division factor for exposure smearing.
         texp  = inpt.get_value('texp', 'exposure time', 0.01, 0.)
         ndiv  = inpt.get_value('ndiv', 'sub-division factor to smear exposures',
                                1, 1)
+        save = inpt.get_value('save', 'save model?', True)
+        if save:
+            dout = inpt.get_value(
+                'dout', 'name of output file',
+                subs.Fname('lc', '.dat', subs.Fname.NEW)
+            )
         plot  = True
         ppath = inpt.get_value('ppath', 'plot paths?', True)
         inpt.save()
@@ -141,10 +151,25 @@ weighting factor for chi**2, sub-division factor for exposure smearing.
         fit /= fit.max()
 
         if plot:
+            ts += 2454833 - 2400000 - 58600
             plt.plot(ts,fit,'b')
-            plt.xlabel('Time (days)')
+            plt.xlabel('Time [MJD - 58600]')
             plt.ylabel('Flux')
             plt.show()
+
+        if save:
+            header = """
+This is a model output
+
+Columns are time (BJD-2458600), exposure time (days), flux
+
+"""
+            np.savetxt(
+                dout,
+                np.column_stack([ts, tes, fit]),
+                '%14.9f %9.3e %8.6f',
+                header=header
+            )
 
     if plot and ppath:
 
