@@ -21,6 +21,10 @@ def sol2au(length):
     """Converts from solar radii to AU"""
     return subs.RSUN*length/subs.AU
 
+def au2sol(length):
+    """Converts from AU to solar radii"""
+    return subs.AU*length/subs.RSUN
+
 def load_data(dfile):
     """Loads a data file assumed to be in space-separated
     column form with columns of time, exposure time, flux,
@@ -435,6 +439,122 @@ class Model(dict):
          type of t0. 1 = time of periastron. 2 = time of eclipse.
          The latter is more directly fixed by the data
 
+    4) Name = 'special'
+
+    Defines a tilted disc model specifically for the 7 events with variable 
+    idisc and OMEGAdisc for each event.
+
+    Tdisc parameters::
+
+      r1        : (float)
+         radius of star 1 [solar]
+
+      r2        : (float)
+         radius of star 2 [solar]
+
+      rdisc     : (float)
+         radius of the disc [solar]
+
+      a1        : (float)
+         semi-major axis of star 1 around binary 1's CoM [solar]
+
+      a2        : (float)
+         semi-major axis of star 2 around binary 1's CoM [solar]
+
+      adisc     : (float)
+         semi-major axis of disc around system CoM [solar]
+
+      ab        : (float)
+         semi-major axis of binary 1 rel. to system CoM [solar]
+
+      eb1       : (float)
+         eccentricity of binary 1
+
+      eb2       : (float)
+         eccentricity of binary 2
+
+      omegab1   : (float)
+         argument of periapsis of binary 1 [degrees]
+
+      omegab2   : (float)
+         argument of periapsis of binary 2 [degrees]
+
+      Pb1       : (float)
+         period of binary 1 [days]
+
+      Pb2       : (float)
+         period of binary 2 [days]
+
+      ib1       : (float)
+         inclination of binary 1 [degrees]
+
+      ib2       : (float)
+         inclination of binary 2 [degrees]
+
+      OMEGAb1   : (float)
+         longitude of ascending node of binary 1 [degrees]
+
+      OMEGAb2   : (float)
+         longitude of ascending node of binary 2 [degrees]
+
+      t0b1    : (float)
+         zeropoint of binary 1 [days]
+
+      t0b2    : (float)
+         zeropoint of binary 2 [days]
+
+      s1      : (float)
+         surface brightness of star 1
+
+      s2      : (float)
+         surface brightness of star 2
+
+      sdisc1  : (float)
+         surface brightness of disc [constant coefficient of poly]
+
+      sdisc2  : (float)
+         surface brightness of disc [linear coefficient of poly]
+
+      sdisc3  : (float)
+         surface brightness of disc [quadratic coefficient of poly]
+
+      third   : (float)
+         fractional "third" light, i.e. extra light from something other
+         than stellar components. Range 0 to 1.
+
+      limb1   : (float)
+         linear limb darkening coeff of star 1
+
+      limb2   : (float)
+         linear limb darkening coeff of star 2
+
+      n1      : (int)
+         number of annuli over face of star 1
+
+      n2      : (int)
+         number of annuli over face of star 2
+
+      ndisc   : (int)
+         number of annuli over face of disc
+
+      ttype   : (int)
+         type of t0. 1 = time of periastron. 2 = time of eclipse.
+         The latter is more directly fixed by the data
+
+      idisc1    : (float)
+         inclination of disc, event 1 [degrees]
+
+      OMEGAdisc1: (float)
+         longitude of ascending node of disc, event 1 [degrees]
+
+      idisc2    : (float)
+         inclination of disc, event 1 [degrees]
+
+      OMEGAdisc2: (float)
+         longitude of ascending node of disc, event 1 [degrees]
+
+      etc, up to #7 one for each event.
+
     """
 
     # dictionary of parameter name dictionaries keyed by the name of the model
@@ -558,6 +678,57 @@ class Model(dict):
              'n2' : (0, 2, 1000),
              'ndisc' : (0, 2, 1000),
              'ttype' : (0, 1, 2),
+             },
+
+        'special' :
+            {'r1' : (0.02, 1.e-4, 20.),
+             'r2' : (0.02, 1.e-4, 20.),
+             'rdisc' : (0.02, 1.e-4, 20.),
+             'a1' : (0.01, 0., 400.),
+             'a2' : (0.01, 0., 400.),
+             'adisc' : (0.2,  0., 400.),
+             'ab' : (0.2,  0., 400.),
+             'eb1' : (0.01, 0., 0.999999),
+             'eb2' : (0.01, 0., 0.999999),
+             'omegab1' : (1, 0., 360.),
+             'omegab2' : (1, 0., 360.),
+             'Pb1' : (1.e-5, 0.2585, 0.2586),
+             'Pb2' : (1.e-2, 0.3, 50.),
+             'ib1' : (0.1, 85., 90.),
+             'ib2' : (0.1, 85., 90.),
+             'OMEGAb1' : (1, 170., 190.),
+             'OMEGAb2' : (1, 170., 190.),
+             't0b1' : (0.01, 0.,1000.),
+             't0b2' : (0.1, 0.,1000.),
+             's1' : (1., 0., 5000.),
+             's2' : (1., 0., 5000.),
+             'sdisc1' : (1., 0., 5000.),
+             'sdisc2' : (1., 0., 5000.),
+             'sdisc3' : (1., 0., 5000.),
+             'sdisc4' : (1., 0., 5000.),
+             'sdisc5' : (1., 0., 5000.),
+             'sdisc6' : (1., 0., 5000.),
+             'third' : (0.05, 0., 1.),
+             'limb1' : (0.01, 0., 1.),
+             'limb2' : (0.01, 0., 1.),
+             'n1' : (0, 2, 1000),
+             'n2' : (0, 2, 1000),
+             'ndisc' : (0, 2, 1000),
+             'ttype' : (0, 1, 2),
+             'idisc1' : (0.1, 85., 90.),
+             'OMEGAdisc1' : (1, 0., 180.),
+             'idisc2' : (0.1, 85., 90.),
+             'OMEGAdisc2' : (1, 0., 180.),
+             'idisc3' : (0.1, 85., 90.),
+             'OMEGAdisc3' : (1, 0., 180.),
+             'idisc4' : (0.1, 85., 90.),
+             'OMEGAdisc4' : (1, 0., 180.),
+             'idisc5' : (0.1, 85., 90.),
+             'OMEGAdisc5' : (1, 0., 180.),
+             'idisc6' : (0.1, 85., 90.),
+             'OMEGAdisc6' : (1, 0., 180.),
+             'idisc7' : (0.1, 85., 90.),
+             'OMEGAdisc7' : (1, 0., 180.),
              },
         }
 
@@ -744,7 +915,7 @@ class Model(dict):
                 self['t0b2'][0], self['t0b3'][0], self['ttype'][0],
                 )
 
-        elif self.model == 'tdisc':
+        elif self.model == 'tdisc' or self.model == 'special':
             omegab1 = math.radians(self['omegab1'][0])
             omegab2 = math.radians(self['omegab2'][0])
             OMEGAb1 = math.radians(self['OMEGAb1'][0])
@@ -763,6 +934,7 @@ class Model(dict):
                 ib1, ib2, OMEGAb1, OMEGAb2,
                 self['t0b1'][0], self['t0b2'][0], self['ttype'][0],
                 )
+
         else:
             raise Exception(
                 'Model = {:s} not recognised'.format(self.model)
@@ -775,6 +947,17 @@ class Model(dict):
         to re-define the prior through an input file.
         """
         return 0.
+
+    def adjust(self):
+        """
+        This is meant to be a routine over-ridden in a derived class
+        that adjust certain model parameters in the light of others.
+        In some cases this can by-pass the need for prior constraints.
+        e.g. in the quadratic mode2 model, "a4" can be fixed once "ab1"
+        is set. It must return a boolean status to say whether it has run
+        OK.
+        """
+        return True
 
     def chisq(self, ts, tes, fs, fes, ws, nds):
         """
@@ -912,7 +1095,7 @@ class Model(dict):
             total = s1*tflux1+s2*tflux2+s3*tflux3+s4*tflux4
             lc = third*total + (1-third)*lc
 
-        elif self.model == 'tdisc':
+        elif self.model == 'tdisc' or self.model == 'special':
 
             limb1 = Limb(Limb.POLY, self['limb1'][0])
             limb2 = Limb(Limb.POLY, self['limb2'][0])
@@ -943,8 +1126,6 @@ class Model(dict):
             r1 = sol2au(self['r1'][0])
             r2 = sol2au(self['r2'][0])
             rdisc = sol2au(self['rdisc'][0])
-            idisc = math.radians(self['idisc'][0])
-            OMEGAdisc = math.radians(self['OMEGAdisc'][0])
 
             # Calculate arrays of annuli (radius and flux contribution) for
             # each sphere as an input to seclipse.disc.flux2 and
@@ -953,21 +1134,60 @@ class Model(dict):
             rings2, fluxes2, tflux2 = ring.rfinit(r2, limb2, self['n2'][0])
             xd, yd, fd, tfd = disc.rfinit(rdisc, bright, self['ndisc'][0])
 
-            # project the disc arrays
-            xd, yd = disc.project(xd, yd, idisc, OMEGAdisc)
+            if self.model == 'tdisc':
+                idisc = math.radians(self['idisc'][0])
+                OMEGAdisc = math.radians(self['OMEGAdisc'][0])
 
-            # Calculate positions of stellar CoMs at 'expanded' times
-            # to allow for exposure smearing
-            tnew = expand(ts,tes,nds)
-            (x1s,y1s,z1s),(x2s,y2s,z2s),(xds,yds,zds) = self.paths(tnew)
+                # project the disc arrays
+                xd, yd = disc.project(xd, yd, idisc, OMEGAdisc)
 
-            # Calculate light curve
-            lnew = disc.lc2(
-                xd, yd, fd, tfd, rdisc,
-                r1, rings1, fluxes1, tflux1, s1, x1s-xds, y1s-yds, z1s-zds,
-                r2, rings2, fluxes2, tflux2, s2, x2s-xds, y2s-yds, z2s-zds
-                )
-            lc = compress(lnew, nds)
+                # Calculate positions of stellar CoMs at 'expanded' times
+                # to allow for exposure smearing
+                tnew = expand(ts,tes,nds)
+                (x1s,y1s,z1s),(x2s,y2s,z2s),(xds,yds,zds) = self.paths(tnew)
+
+                # Calculate light curve
+                lnew = disc.lc2(
+                    xd, yd, fd, tfd, rdisc,
+                    r1, rings1, fluxes1, tflux1, s1, x1s-xds, y1s-yds, z1s-zds,
+                    r2, rings2, fluxes2, tflux2, s2, x2s-xds, y2s-yds, z2s-zds
+                    )
+                lc = compress(lnew, nds)
+
+            else:
+
+                # this one subdivides up according to specific times and is designed
+                # for the allevents data. It uses an independent orientation for each
+                # event to see if disc is precessing.
+                nums = (1,2,3,4,5,6,7)
+
+                # time ranges
+                trs = ((160,170),(360,380),(560,590),(770,790),(970,990),(1180,1200),(1380,1400))
+
+                lcs = []
+                for num,(tmin,tmax) in zip(nums,trs):
+                    idisc = math.radians(self['idisc{:d}'.format(num)][0])
+                    OMEGAdisc = math.radians(self['OMEGAdisc{:d}'.format(num)][0])
+
+                    # project the disc arrays
+                    xdt, ydt = disc.project(xd, yd, idisc, OMEGAdisc)
+
+                    # Calculate positions of stellar CoMs at 'expanded' times
+                    # to allow for exposure smearing
+                    ok = (ts > tmin) & (ts < tmax)
+                    tnew = expand(ts[ok],tes[ok],nds[ok])
+                    (x1s,y1s,z1s),(x2s,y2s,z2s),(xds,yds,zds) = self.paths(tnew)
+
+                    # Calculate light curve
+                    lnew = disc.lc2(
+                        xdt, ydt, fd, tfd, rdisc,
+                        r1, rings1, fluxes1, tflux1, s1, x1s-xds, y1s-yds, z1s-zds,
+                        r2, rings2, fluxes2, tflux2, s2, x2s-xds, y2s-yds, z2s-zds
+                        )
+                    # accumulate the sections of light curve
+                    lcs.append(compress(lnew, nds[ok]))
+
+                lc = np.concatenate(lcs)
 
             # add "third" light
             total = s1*tflux1+s2*tflux2+tfd
@@ -1049,7 +1269,7 @@ class Model(dict):
                 self['limb3'][0] >= 0. and self['limb3'][0] <= 1. and \
                 self['limb4'][0] >= 0. and self['limb4'][0] <= 1.
 
-        elif self.model == 'tdisc':
+        elif self.model == 'tdisc' or self.model == 'special':
 
             # elementary checks
             if self['r1'][0] <= 0 or self['r2'][0] <= 0 or \
