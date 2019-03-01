@@ -1,6 +1,6 @@
-from setuptools import setup, Extension
+from setuptools import setup, find_packages
+from setuptools.extension import Extension
 import os, numpy
-from codecs import open
 from os import path
 from Cython.Build import cythonize
 
@@ -18,12 +18,13 @@ seclipse = [Extension(
 
 setup(name='trm.seclipse',
       version     = '1',
-      packages    = ['trm', 'trm.seclipse',],
+      packages=find_packages(exclude=['docs', 'tests']),
       ext_modules=cythonize(seclipse),
 
       entry_points = {
           'console_scripts' : [
               'lcmodel=trm.seclipse.scripts.lcmodel:lcmodel',
+              'mcmc=trm.seclipse.scripts.mcmc:mcmc',
           ]
       },
 

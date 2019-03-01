@@ -1,27 +1,5 @@
 #!/usr/bin/env python
 
-from __future__ import print_function, division
-
-"""Carries out MCMC iterations of multi-star light curve model.
-
-The main parameter that might cause difficulty is "prior" which allows you to
-override the definition of the "prior" method of the seclipse.model.Model
-object used to define the triple / quadruple model using the derived class
-"Dmodel". e.g. The following code tacks on a constraint on the parameter 'a2'
-onto to whatever are already applied by the default "prior"::
-
-  class Dmodel(Model):
-      def prior(self):
-          pri = super(Dmodel, self).prior()
-          if self['a2'][0] > 3.:
-              pri += ((self['a2'][0]-3.)/0.05)**2
-          return pri
-
-Returning pri > 1e20 is used as a time saver, as then no computation of
-the light curve will be undertaken.
-
-"""
-
 import sys
 import os
 import math as m
@@ -31,6 +9,8 @@ from trm import subs
 import trm.subs.input as inp
 from trm import seclipse
 from trm import mcmc
+
+__all__ = ['mcmc',]
 
 class Lnpost(object):
     """Function object that returns ln(post prob) for emcee given a vector of
@@ -102,7 +82,36 @@ class Lnpost(object):
             # never be selected
             return -1.e30
 
-if __name__ == '__main__':
+def mcmc(args=None):
+
+    """``mcmc log prior (model nthreads nstore nwalker) data ntrial
+    (sfac stretch) soft output''
+
+    Carries out MCMC iterations of multi-star light curve model.
+
+    By default uses no prior. To alter the prior write a file called
+    "prior.py" in the directory where you run this. This should
+    override the definition of the "prior" method of the
+    seclipse.model.Model object used to define the triple / quadruple
+    model using the derived class "Dmodel". e.g. The following code
+    tacks on a constraint on the parameter 'a2' onto to whatever are
+    already applied by the default "prior"::
+
+    class Dmodel(Model):
+        def prior(self):
+            pri = super(Dmodel, self).prior()
+            if self['a2'][0] > 3.:
+                pri += ((self['a2'][0]-3.)/0.05)**2
+            return pri
+
+    This is imported if available.
+
+    """
+
+
+    # generate arguments
+    if args is None:
+        args = sys.argv.copy()
 
     # generate arguments
     inpt = inp.Input('PYTHON_TRIPLE_ENV', '.pytriple', sys.argv)
@@ -111,10 +120,10 @@ if __name__ == '__main__':
     inpt.register('log', inp.Input.LOCAL, inp.Input.PROMPT)
     inpt.register('prior', inp.Input.LOCAL, inp.Input.PROMPT)
     inpt.register('model', inp.Input.LOCAL, inp.Input.PROMPT)
-    inpt.register('data', inp.Input.LOCAL, inp.Input.PROMPT)
     inpt.register('nthreads', inp.Input.LOCAL, inp.Input.PROMPT)
     inpt.register('nstore', inp.Input.LOCAL, inp.Input.PROMPT)
     inpt.register('nwalker', inp.Input.LOCAL, inp.Input.PROMPT)
+    inpt.register('data', inp.Input.LOCAL, inp.Input.PROMPT)
     inpt.register('ntrial', inp.Input.LOCAL, inp.Input.PROMPT)
     inpt.register('sfac', inp.Input.LOCAL, inp.Input.PROMPT)
     inpt.register('stretch', inp.Input.LOCAL, inp.Input.PROMPT)
@@ -122,17 +131,18 @@ if __name__ == '__main__':
     inpt.register('output', inp.Input.LOCAL, inp.Input.PROMPT)
 
     # get them
-    log = inpt.get_value('log', 'MCMC log file',
-                         subs.Fname('lc', '.log', exist=False))
+    log = inpt.get_value(
+        'log', 'MCMC log file',
+        subs.Fname('lc', '.log', exist=False)
+    )
 
-    # prior implemented through on the fly re-definition of the Model object
-    # using a derived class
-    prior = inpt.get_value('prior', 'file containing definition of the prior',
-                           subs.Fname('prior', '.py', exist=False))
+    # import prior
+    prior = inpt.get_value(
+        'prior', 'file containing definition of the prior',
+        subs.Fname('prior', '.py', exist=False)
+    )
     if os.path.exists(prior):
-        with open(prior) as fin:
-            pri = fin.read()
-        exec(pri)
+        __import__(prior)
     else:
         class Dmodel(seclipse.model.Model):
             pass
