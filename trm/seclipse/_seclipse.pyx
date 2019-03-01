@@ -1,7 +1,7 @@
 import numpy as np
 cimport numpy as np
 cimport cython
-from libc.math cimport acos, sqrt, atan2, M_PI
+from libc.math cimport acos, sqrt, atan2, M_PI, cos, sin
 
 DTYPE = np.float64
 ITYPE = np.int
@@ -889,7 +889,7 @@ def dflux2(np.ndarray[DTYPE_t, ndim=1] x, np.ndarray[DTYPE_t, ndim=1] y, np.ndar
          Total flux from disc.
 
       rd  : (float)
-         Radius of disc (used as a crude time saver)
+         Radius of disc
 
       r1  : (float)
          radius of first sphere
@@ -921,13 +921,14 @@ def dflux2(np.ndarray[DTYPE_t, ndim=1] x, np.ndarray[DTYPE_t, ndim=1] y, np.ndar
     """
 
     cdef unsigned int i, n = len(f)
-    cdef double r1sq, r2sq, xsq, flux = 0.
+    cdef double r1sq, r2sq, flux = 0.
+    cdef bint occ1, occ2
 
-    # The second condition in the next two lines is a minimal condition for a
-    # sphere to occult the disc. i.e. if it is not satisfied, there will be no
-    # eclipse, but if it is satisfied, there may or may not be an eclipse.  It
-    # is added to save time because quite often this routine is likely to be
-    # called with the objects quite far apart on the sky
+    # occ1 and occ2 are minimum conditions required for there to be any
+    # occultation of the disc by the two stars. They are used to save time. A
+    # more refined check to really test whether the stars occult the disc
+    # requires evaluation of the roots of a quartic and turns out to cost more
+    # time than it saves.
     occ1 = z1 > 0 and x1**2+y1**2 < (rd+r1)**2
     occ2 = z2 > 0 and x2**2+y2**2 < (rd+r2)**2
 
