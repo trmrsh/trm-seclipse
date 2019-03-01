@@ -21,6 +21,12 @@ setup(name='trm.seclipse',
       packages    = ['trm', 'trm.seclipse',],
       ext_modules=cythonize(seclipse),
 
+      entry_points = {
+          'console_scripts' : [
+              'lcmodel=trm.seclipse.scripts.lcmodel:lcmodel',
+          ]
+      },
+
       # metadata
       author='Tom Marsh',
       author_email='t.r.marsh@warwick.ac.uk',
