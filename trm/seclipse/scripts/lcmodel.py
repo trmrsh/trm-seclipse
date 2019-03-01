@@ -22,7 +22,9 @@ def lcmodel(args=None):
     """
 
     # generate arguments
-    print(args)
+    if args is None:
+        args = sys.argv.copy()
+
     inpt = inp.Input('PYTHON_TRIPLE_ENV', '.pytriple', args)
 
     # register parameters
