@@ -9,7 +9,17 @@ from trm import subs
 import trm.subs.input as inp
 from trm import seclipse
 from trm import mcmc
-
+try:
+    # Import Dmodel defined in Prior.py in directory
+    # we are working from.
+    sys.path.insert(0,'.')
+    from Prior import Dmodel
+    default = False
+except:
+    class Dmodel(seclipse.model.Model):
+        pass    
+    default = True
+    
 __all__ = ['mcmc',]
 
 class Lnpost(object):
@@ -84,18 +94,17 @@ class Lnpost(object):
 
 def mcmc(args=None):
 
-    """``mcmc log prior (model nthreads nstore nwalker) data ntrial
+    """``mcmc log (model nthreads nstore nwalker) data ntrial
     (sfac stretch) soft output''
 
     Carries out MCMC iterations of multi-star light curve model.
 
-    By default uses no prior. To alter the prior write a file called
-    "prior.py" in the directory where you run this. This should
-    override the definition of the "prior" method of the
-    seclipse.model.Model object used to define the triple / quadruple
-    model using the derived class "Dmodel". e.g. The following code
-    tacks on a constraint on the parameter 'a2' onto to whatever are
-    already applied by the default "prior"::
+    This will import a file called "Prior.py" if it exists in the directory
+    within which this is run. This should override the definition of the
+    "prior" method of the seclipse.model.Model object used to define the
+    triple / quadruple model using the derived class "Dmodel". e.g. The
+    following code tacks on a constraint on the parameter 'a2' onto to
+    whatever are already applied by the default "prior"::
 
     class Dmodel(Model):
         def prior(self):
@@ -118,7 +127,6 @@ def mcmc(args=None):
 
     # register parameters
     inpt.register('log', inp.Input.LOCAL, inp.Input.PROMPT)
-    inpt.register('prior', inp.Input.LOCAL, inp.Input.PROMPT)
     inpt.register('model', inp.Input.LOCAL, inp.Input.PROMPT)
     inpt.register('nthreads', inp.Input.LOCAL, inp.Input.PROMPT)
     inpt.register('nstore', inp.Input.LOCAL, inp.Input.PROMPT)
@@ -136,17 +144,6 @@ def mcmc(args=None):
         subs.Fname('lc', '.log', exist=False)
     )
 
-    # import prior
-    prior = inpt.get_value(
-        'prior', 'file containing definition of the prior',
-        subs.Fname('prior', '.py', exist=False)
-    )
-    if os.path.exists(prior):
-        __import__(prior)
-    else:
-        class Dmodel(seclipse.model.Model):
-            pass
-
     if os.path.exists(log):
         # if a log file exists, read it in to find some of the parameters
         chain = mcmc.Chain(log)
@@ -158,9 +155,7 @@ def mcmc(args=None):
         nstore = chain.nstore
         stretch = chain.stretch
 
-        # Define initial model, fix order of variables
         model = Dmodel(chain.model)
-
         if not model.ok():
             print('Initial model fails parameter check in ok(); please fix')
             exit(1)
@@ -171,8 +166,10 @@ def mcmc(args=None):
         append = True
 
     else:
-        mod = inpt.get_value('model', 'light curve model', subs.Fname('lc', '.mod'))
-        # Define initial model
+        mod = inpt.get_value(
+            'model', 'light curve model', subs.Fname('lc', '.mod')
+        )
+        
         model = Dmodel(mod)
         if not model.ok():
             print('Initial model fails parameter check in ok(); please fix')
@@ -192,17 +189,18 @@ def mcmc(args=None):
 
     # Remaining parameters
     nthreads = inpt.get_value('nthreads', 'number of threads', 1, 1)
-
     ntrial = inpt.get_value('ntrial', 'number of trials', 10000, 1)
-
     soft = inpt.get_value('soft', 'softening factor to scale chi**2 down',
                           1., 1.e-20)
-
     output = inpt.get_value('output', 'best light curve model',
                             subs.Fname('save', '.mod', subs.Fname.NEW))
     inpt.save()
 
-
+    if default:
+        print('Using default prior')
+    else:
+        print('Using prior defined in Prior.py')
+        
     if not append:
         # In this case we need to generate nwalker models which we do by
         # randomly perturbing around starting model We ensure the starting
