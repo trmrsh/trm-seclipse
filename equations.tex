@@ -1,0 +1,61 @@
+\documentclass[a4paper,14pt,oneside]{extbook}
+\usepackage[overload]{empheq}% also loads amsmath
+\usepackage{amsthm}
+
+\newcommand{\vect}[1]{\mathbf{#1}}
+\title{Circles \& ellipses}
+\begin{document}
+The problem considered here comes up when calculating the eclipse of ellipses
+by circles.
+
+Consider a point at $(x_o,y_0)$ and an ellipse oriented parallel to the $x$,
+$y$ axes and centred on the origin satisfying the relation
+\[ \frac{x^2}{a^2} + \frac{y^2}{b^2} = 1.\]
+
+Question: assuming the point lies outside the ellipse, i.e. that
+\[ \frac{x_0^2}{a^2} + \frac{y_0^2}{b^2} > 1,\]
+what is the shortest distance between the ellipse and the point?
+
+Answer: This is a problem of constrained minimisation which can be solved 
+with Langrange multipliers. We are led to consider the function
+\[ f(x,y) = (x-x_0)^2 + (y-y_0)^2 + \lambda \left(\frac{x^2}{a^2} + 
+\frac{y^2}{b^2}  -1\right).\]
+Setting its partial derivatives wrt $x$ and $y$ to zero gives
+\begin{eqnarray*}
+x &=& \frac{x_0}{1+\lambda/a^2},\\
+y &=& \frac{y_0}{1+\lambda/b^2},
+\end{eqnarray*}
+for a point on the ellipse at an extremum of distance from $x_0$, $y_0$. If we
+can evaluate $\lambda$, then we have the position of the point of interest and
+can hence calculate its distance from $x_0$, $y_0$.
+
+Since the point in question lies on the ellipse it must satisfy the equation
+for the ellipse and hence
+\[ \frac{x_0^2}{(1+\lambda/a^2)^2} + \frac{y_0^2}{(1+\lambda/b^2)^2} = 1.\]
+Multiplying through by the denominators
+\[ b^2 x_0^2 (1+\lambda/b^2)^2 + a^2 y_0^2 (1+\lambda/a^2)^2 = a^2 b^2 (1+\lambda/a^2)^2
+(1+\lambda/b^2)^2,\]
+and then multiplying through by $a^2 b^2$ gives
+\[ a^2 x_0^2 (\lambda + b^2)^2 + b^2 y_0^2 (\lambda + a^2)^2 = (\lambda + a^2)^2
+(\lambda + b^2)^2.\]
+Expanding all terms gives a quartic in $\lambda$ of the form
+\[ c_1 \lambda^4 + c_2 \lambda^3 + c_3 \lambda^2 + c_4 \lambda + c_ 5 = 0,\]
+where
+\begin{eqnarray*}
+c_1 &=& 1,\\
+c_2 &=& 2(a^2+b^2),\\
+c_3 &=& a^4+4a^2b^2+b^4 - a^2 x_0^2 - b^2 y_0^2,\\
+c_4 &=& 2a^2b^2 (a^2 + b^2 - x_0^2 - y_0^2),\\
+c_5 &=& a^2b^2 (a^2b^2-b^2x_0^2 - a^2 y_0^2).
+\end{eqnarray*}
+
+In the case I use it, $a = 1$ and $b = \cos i$, so these coefficients become
+\begin{eqnarray*}
+c_1 &=& 1,\\
+c_2 &=& 2(1+\cos^2 i),\\
+c_3 &=& 1+4\cos^2 i+\cos^4 i - x_0^2 - y_0^2\cos^2 i,\\
+c_4 &=& 2\cos^2 i (1 + \cos^2 i - x_0^2 - y_0^2),\\
+c_5 &=& \cos^2 i (\cos^2 i - x_0^2\cos^2 i - y_0^2).
+\end{eqnarray*}
+
+\end{document}
