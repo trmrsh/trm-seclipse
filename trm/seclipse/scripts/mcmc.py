@@ -8,7 +8,8 @@ import emcee
 from trm import subs
 import trm.subs.input as inp
 from trm import seclipse
-from trm import mcmc
+from trm import mcmc as MCMC
+
 try:
     # Import Dmodel defined in Prior.py in directory
     # we are working from.
@@ -146,7 +147,7 @@ def mcmc(args=None):
 
     if os.path.exists(log):
         # if a log file exists, read it in to find some of the parameters
-        chain = mcmc.Chain(log)
+        chain = MCMC.Chain(log)
 
         nwalker = chain.nwalker
         if len(chain) < nwalker:
