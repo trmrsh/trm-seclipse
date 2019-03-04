@@ -24,6 +24,7 @@ setup(name='trm.seclipse',
       entry_points = {
           'console_scripts' : [
               'lcmodel=trm.seclipse.scripts.lcmodel:lcmodel',
+              'masses=trm.seclipse.scripts.masses:masses',
               'mcmc=trm.seclipse.scripts.mcmc:mcmc',
           ]
       },
