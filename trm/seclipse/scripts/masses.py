@@ -1,11 +1,5 @@
 #!/usr/bin/env python
 
-"""
-computes the eclipse of limb-darkened spheres, dumps the results to disk in
-the same format as the standard input data files. It can either compute to
-match an already existing data file or on a fine array of times.
-"""
-
 from __future__ import division
 
 import sys
@@ -16,7 +10,16 @@ import trm.subs.input as inp
 from trm import seclipse, orbits, subs
 from trm.subs import Vec3
 
-if __name__ == '__main__':
+def masses(args=None):
+    """``masses model``
+
+    Prints out the masses of the components of a given model, triple, quadruple
+    or whatever.
+    """
+
+    # generate arguments
+    if args is None:
+        args = sys.argv.copy()
 
     # generate arguments
     inpt = inp.Input('PYTHON_TRIPLE_ENV', '.pytriple', sys.argv)
