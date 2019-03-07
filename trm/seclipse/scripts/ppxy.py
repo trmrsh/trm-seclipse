@@ -1,16 +1,5 @@
 #!/usr/bin/env python
 
-"""
-script to compute and plot the eclipse of limb-darkened spheres. It either
-does so given an already existing data file as a template or on a
-regularly-spaced set of times. In the latter case it will also plot a
-representation of the paths of the spheres.
-
-This one projects onto the plane of the sky (x--y)
-"""
-
-from __future__ import division
-
 import sys
 import math
 import time
@@ -20,7 +9,19 @@ import trm.subs.input as inp
 from trm import seclipse, orbits, subs
 from trm.subs import Vec3
 
-if __name__ == '__main__':
+def ppxy(args=None):
+    """script to compute and plot the eclipse of limb-darkened spheres. It either
+    does so given an already existing data file as a template or on a
+    regularly-spaced set of times. In the latter case it will also plot a
+    representation of the paths of the spheres.
+
+    This one projects onto the plane of the sky (x--y)
+
+    """
+
+    # generate arguments
+    if args is None:
+        args = sys.argv.copy()
 
     # generate arguments
     inpt = inp.Input('PYTHON_TRIPLE_ENV', '.pytriple', sys.argv)

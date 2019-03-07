@@ -1,13 +1,5 @@
 #!/usr/bin/env python
 
-"""
-computes the paths of limb-darkened spheres as generated during light curve
-modelling. It can either compute to match an already existing data file or on
-a fine array of times.
-"""
-
-from __future__ import division
-
 import sys
 import math
 import time
@@ -16,7 +8,16 @@ import trm.subs.input as inp
 from trm import seclipse, orbits, subs
 from trm.subs import Vec3
 
-if __name__ == '__main__':
+def cpaths(args=None):
+
+    """computes the paths of limb-darkened spheres as generated during
+    light curve modelling. It can either compute to match an already
+    existing data file or on a fine array of times.
+
+    """
+
+    if args is None:
+        args = sys.argv.copy()
 
     # generate arguments
     inpt = inp.Input('PYTHON_TRIPLE_ENV', '.pytriple', sys.argv)

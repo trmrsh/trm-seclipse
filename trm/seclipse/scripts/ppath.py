@@ -18,7 +18,10 @@ import trm.subs.input as inp
 from trm import seclipse, orbits, subs
 from trm.subs import Vec3
 
-if __name__ == '__main__':
+def ppath(args=None):
+
+    if args is None:
+        args = sys.argv.copy()
 
     # generate arguments
     inpt = inp.Input('PYTHON_TRIPLE_ENV', '.pytriple', sys.argv)

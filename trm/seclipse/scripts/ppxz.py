@@ -1,18 +1,5 @@
 #!/usr/bin/env python
 
-"""
-script to compute and plot the eclipse of limb-darkened spheres. It either
-does so given an already existing data file as a template or on a
-regularly-spaced set of times. In the latter case it will also plot a
-representation of the paths of the spheres. 
-
-This one plots the path projected perpendicular to the plane of the sky onto
-the x--z plane which is more-or-less the orbital plane if the OMEGAs are close
-to 270 or 90. It plots -z so that the observer is best though of as being at the bottom of the screen.
-"""
-
-from __future__ import division
-
 import sys
 import math
 import time
@@ -22,7 +9,25 @@ import trm.subs.input as inp
 from trm import seclipse, orbits, subs
 from trm.subs import Vec3
 
-if __name__ == '__main__':
+def ppxz(args=None):
+
+    """script to compute and plot the eclipse of limb-darkened
+    spheres. It either does so given an already existing data file as
+    a template or on a regularly-spaced set of times. In the latter
+    case it will also plot a representation of the paths of the
+    spheres.
+
+    This one plots the path projected perpendicular to the plane of
+    the sky onto the x--z plane which is more-or-less the orbital
+    plane if the OMEGAs are close to 270 or 90. It plots -z so that
+    the observer is best though of as being at the bottom of the
+    screen.
+
+    """
+
+    # generate arguments
+    if args is None:
+        args = sys.argv.copy()
 
     # generate arguments
     inpt = inp.Input('PYTHON_TRIPLE_ENV', '.pytriple', sys.argv)
