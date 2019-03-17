@@ -18,9 +18,9 @@ try:
     default = False
 except:
     class Dmodel(seclipse.model.Model):
-        pass    
+        pass
     default = True
-    
+
 __all__ = ['mcmc',]
 
 class Lnpost(object):
@@ -96,7 +96,7 @@ class Lnpost(object):
 def mcmc(args=None):
 
     """``mcmc log (model nthreads nstore nwalker) data ntrial
-    (sfac stretch) soft output''
+    (soft stretch) soft output''
 
     Carries out MCMC iterations of multi-star light curve model.
 
@@ -116,6 +116,41 @@ def mcmc(args=None):
 
     This is imported if available.
 
+    Arguments::
+
+       log : string
+          log file to store results (can be old)
+
+       model : string
+          if log is new, need to start with a model
+
+       nthreads : int
+          number of threads to run in parallel
+
+       nstore : int
+          how often to store results
+
+       nwalker : int
+          how many walkers per group
+
+       data : string
+          data file name
+
+       ntrial : int
+          total number of groups (only 1 in nstore of will be stored)
+
+       sfac : float
+          scaling factor to apply to initial jump distribution. Much less
+          than 1 usually.
+
+       stretch : float
+          emcee stretch factor
+
+       soft : float
+          softening factor to divide into chi**2
+
+       output : string
+          file to save best model encountered to.
     """
 
 
@@ -170,7 +205,7 @@ def mcmc(args=None):
         mod = inpt.get_value(
             'model', 'light curve model', subs.Fname('lc', '.mod')
         )
-        
+
         model = Dmodel(mod)
         if not model.ok():
             print('Initial model fails parameter check in ok(); please fix')

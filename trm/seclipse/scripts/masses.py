@@ -9,6 +9,10 @@ import numpy as np
 import trm.subs.input as inp
 from trm import seclipse, orbits, subs
 from trm.subs import Vec3
+from trm.seclipse.model import sol2au, au2sol
+
+def day2year(p):
+    return subs.DAY/subs.YEAR*p
 
 def masses(args=None):
     """``masses model``
@@ -32,7 +36,44 @@ def masses(args=None):
     model = seclipse.model.Model(mod)
     inpt.save()
 
-    if model.model == 'quad2':
+    if model.model == 'quad1':
+        a1 = sol2au(model['a1'][0])
+        a2 = sol2au(model['a2'][0])
+        a3 = sol2au(model['a3'][0])
+        a4 = sol2au(model['a4'][0])
+        ab1 = sol2au(model['ab1'][0])
+        ab2 = sol2au(model['ab2'][0])
+        Pb1 = day2year(model['Pb1'][0])
+        Pb2 = day2year(model['Pb2'][0])
+        Pb3 = day2year(model['Pb3'][0])
+
+        # Work out total masses of 1+2 and 3+4 from
+        # binary 3
+        m12 = ab2*(ab1+ab2)**2/Pb3**2
+        m34 = ab1*(ab1+ab2)**2/Pb3**2
+
+        m1 = a2*(a1+a2)**2/Pb1**2
+        m2 = a1*(a1+a2)**2/Pb1**2
+
+        m3 = a4*(a3+a4)**2/Pb2**2
+        m4 = a3*(a3+a4)**2/Pb2**2
+
+        print(
+            'Binary 1: M1+M2 = {:6.3f}, M1 = {:6.3f}, M2 = {:6.3f}'.format(
+                m1+m2,m1,m2)
+        )
+
+        print(
+            'Binary 2: M3+M4 = {:6.3f}, M3 = {:6.3f}, M4 = {:6.3f}'.format(
+                m3+m4,m3,m4)
+        )
+
+        print(
+            'Binary 3: M1+M2 = {:6.3f}, M3+M4 = {:6.3f}'.format(
+                m12,m34)
+        )
+
+    elif model.model == 'quad2':
         a1 = model['a1'][0]
         a2 = model['a2'][0]
         a3 = model['a3'][0]

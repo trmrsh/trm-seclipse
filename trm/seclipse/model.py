@@ -1,8 +1,6 @@
-from __future__ import division, print_function
+"""Sub-module to define particular stellar configurations (triples,
+quadruples) for modelling light curves.
 
-"""
-Sub-module to define particular stellar configurations (triples, quadruples)
-for modelling light curves.
 """
 
 import math
@@ -69,10 +67,11 @@ class Model(dict):
     modelled as a set of limb-darkened spheres in hierarchical Keplerian
     orbits.
 
-    Two configurations are supported, representing a triple and a quadruple
+    Four configurations are supported, representing a triple and a quadruple
     star. Which is used is determined using the parameter 'model' in the input
-    data file used to define the model, which can either take the value
-    'triple' or 'quad2'. Here are the definitions of the two models:
+    data file used to define the model, which can one of the following values
+    'triple', 'quad2', 'tdisc', 'special'. Here are the definitions of these
+    models:
 
 
     1) Name = 'triple'
@@ -555,6 +554,146 @@ class Model(dict):
 
       etc, up to #7 one for each event.
 
+    2) Name = 'quad1' representing a quadruple star.
+
+    Defines a light curve model for a quadruple star built up from 2 binaries
+    themselves forming a binary. Stars 1 & 2 form one binary, 3 & 4 the other.
+
+    There are three orbits to define as will be obvious below. Mostly
+    this will be obvious through b1 = binary 1 etc, except for the semi-major
+    axes where I think it is more memorable to try to use values that are
+    associated with the stars where possible.
+
+    Quad2 parameters::
+
+      r1      : (float)
+         radius of star 1 [solar]
+
+      r2      : (float)
+         radius of star 2 [solar]
+
+      r3      : (float)
+         radius of star 3 [solar]
+
+      r4      : (float)
+         radius of star 4 [solar]
+
+      a1      : (float)
+         semi-major axis of star 1 around binary 1's CoM [solar]
+
+      a2      : (float)
+         semi-major axis of star 2 around binary 1's CoM [solar]
+
+      a3      : (float)
+         semi-major axis of star 3 around binary 2's CoM [solar]
+
+      a4      : (float)
+         semi-major axis of star 4 around binary 2's CoM [solar]
+
+      ab1     : (float)
+         semi-major axis of binary 1 rel. to system CoM [solar]
+
+      ab2     : (float)
+         semi-major axis of binary 2 rel. to system CoM [solar]
+
+      eb1     : (float)
+         eccentricity of binary 1
+
+      eb2     : (float)
+         eccentricity of binary 2
+
+      eb3     : (float)
+         eccentricity of binary 3 formed of 1+2 and 3+4
+
+      omegab1 : (float)
+         argument of periapsis of binary 1 [degrees]
+
+      omegab2 : (float)
+         argument of periapsis of binary 2 [degrees]
+
+      omegab3 : (float)
+         argument of periapsis of binary 3 [degrees]
+
+      Pb1     : (float)
+         period of binary 1 [days]
+
+      Pb2     : (float)
+         period of binary 2 [days]
+
+      Pb3     : (float)
+         period of binary 3 [days]
+
+      ib1     : (float)
+         inclination of binary 1 [degrees]
+
+      ib2     : (float)
+         inclination of binary 2 [degrees]
+
+      ib3     : (float)
+         inclination of binary 3 [degrees]
+
+      OMEGAb1 : (float)
+         longitude of ascending node of binary 1 [degrees]
+
+      OMEGAb2 : (float)
+         longitude of ascending node of binary 2 [degrees]
+
+      OMEGAb3 : (float)
+         longitude of ascending node of binary 3 [degrees]
+
+      t0b1    : (float)
+         zeropoint of binary 1 [days]
+
+      t0b2    : (float)
+         zeropoint of binary 2 [days]
+
+      t0b3     : (float)
+         zeropoint of binary 3 [days]
+
+      s1      : (float)
+         surface brightness of star 1
+
+      s2      : (float)
+         surface brightness of star 2
+
+      s3      : (float)
+         surface brightness of star 3
+
+      s4      : (float)
+         surface brightness of star 4
+
+      third   : (float)
+         fractional "third" light, i.e. extra light from something other
+         than stellar components. Range 0 to 1.
+
+      limb1   : (float)
+         linear limb darkening coeff of star 1
+
+      limb2   : (float)
+         linear limb darkening coeff of star 2
+
+      limb3   : (float)
+         linear limb darkening coeff of star 3
+
+      limb4   : (float)
+         linear limb darkening coeff of star 4
+
+      n1      : (int)
+         number of annuli over face of star 1
+
+      n2      : (int)
+         number of annuli over face of star 2
+
+      n3      : (int)
+         number of annuli over face of star 3
+
+      n4      : (int)
+         number of annuli over face of star 4
+
+      ttype   : (int)
+         type of t0. 1 = time of periastron. 2 = time of eclipse.
+         The latter is more directly fixed by the data
+
     """
 
     # dictionary of parameter name dictionaries keyed by the name of the model
@@ -593,6 +732,51 @@ class Model(dict):
              'n1' : (0, 2, 1000),
              'n2' : (0, 2, 1000),
              'n3' : (0, 2, 1000),
+             'ttype' : (0, 1, 2),
+             },
+
+        'quad1' :
+            {'r1' : (0.02, 1.e-4, 20.),
+             'r2' : (0.02, 1.e-4, 20.),
+             'r3' : (0.02, 1.e-4, 20.),
+             'r4' : (0.02, 1.e-4, 20.),
+             'a1' : (0.01, 0., 400.),
+             'a2' : (0.01, 0., 400.),
+             'a3' : (0.01, 0., 400.),
+             'a4' : (0.01, 0., 400.),
+             'ab1' : (0.2,  0., 400.),
+             'ab2' : (0.2,  0., 400.),
+             'eb1' : (0.01, 0., 0.999999),
+             'eb2' : (0.01, 0., 0.999999),
+             'eb3' : (0.01, 0., 0.999999),
+             'omegab1' : (1, 0., 360.),
+             'omegab2' : (1, 0., 360.),
+             'omegab3' : (1, 0., 360.),
+             'Pb1' : (1.e-5, 0.2585, 0.2586),
+             'Pb2' : (1.e-3, 0.3, 50.),
+             'Pb3' : (1.e-2, 200., 210.),
+             'ib1' : (0.1, 85., 90.),
+             'ib2' : (0.1, 85., 90.),
+             'ib3' : (0.1, 75., 90.),
+             'OMEGAb1' : (1, 170., 190.),
+             'OMEGAb2' : (1, 170., 190.),
+             'OMEGAb3' : (1, 170., 190.),
+             't0b1' : (0.01, 0.,1000.),
+             't0b2' : (0.02, 0.,1000.),
+             't0b3' : (0.1, 0.,1000.),
+             's1' : (1., 0., 5000.),
+             's2' : (1., 0., 5000.),
+             's3' : (1., 0., 5000.),
+             's4' : (1., 0., 5000.),
+             'third' : (0.05, 0., 1.),
+             'limb1' : (0.01, 0., 1.),
+             'limb2' : (0.01, 0., 1.),
+             'limb3' : (0.01, 0., 1.),
+             'limb4' : (0.01, 0., 1.),
+             'n1' : (0, 2, 1000),
+             'n2' : (0, 2, 1000),
+             'n3' : (0, 2, 1000),
+             'n4' : (0, 2, 1000),
              'ttype' : (0, 1, 2),
              },
 
@@ -890,7 +1074,7 @@ class Model(dict):
                 self['t0b1'][0], self['t0b2'][0], self['ttype'][0],
                 )
 
-        elif self.model == 'quad2':
+        elif self.model == 'quad1' or self.model == 'quad2':
             omegab1 = math.radians(self['omegab1'][0])
             omegab2 = math.radians(self['omegab2'][0])
             omegab3 = math.radians(self['omegab3'][0])
@@ -907,12 +1091,23 @@ class Model(dict):
             ab1     = sol2au(self['ab1'][0])
             ab2     = sol2au(self['ab2'][0])
 
-            return orbits.model.quad1Pos(
-                times, a1, a2, a3, a4, ab1, ab2, self['eb1'][0],
-                self['eb2'][0], self['eb3'][0], omegab1, omegab2,
-                omegab3, self['Pb1'][0], self['Pb2'][0], self['Pb3'][0],
-                ib1, ib2, ib3, OMEGAb1, OMEGAb2, OMEGAb3, self['t0b1'][0],
-                self['t0b2'][0], self['t0b3'][0], self['ttype'][0],
+            # the reversal of "quad1" and "quad2" here is unfortunate but correct
+            if self.model == 'quad1':
+                return orbits.model.quad2Pos(
+                    times, a1, a2, a3, a4, ab1, ab2, self['eb1'][0],
+                    self['eb2'][0], self['eb3'][0], omegab1, omegab2,
+                    omegab3, self['Pb1'][0], self['Pb2'][0], self['Pb3'][0],
+                    ib1, ib2, ib3, OMEGAb1, OMEGAb2, OMEGAb3, self['t0b1'][0],
+                    self['t0b2'][0], self['t0b3'][0], self['ttype'][0],
+                )
+
+            elif self.model == 'quad2':
+                return orbits.model.quad1Pos(
+                    times, a1, a2, a3, a4, ab1, ab2, self['eb1'][0],
+                    self['eb2'][0], self['eb3'][0], omegab1, omegab2,
+                    omegab3, self['Pb1'][0], self['Pb2'][0], self['Pb3'][0],
+                    ib1, ib2, ib3, OMEGAb1, OMEGAb2, OMEGAb3, self['t0b1'][0],
+                    self['t0b2'][0], self['t0b3'][0], self['ttype'][0],
                 )
 
         elif self.model == 'tdisc' or self.model == 'special':
@@ -1054,7 +1249,7 @@ class Model(dict):
             total = s1*tflux1+s2*tflux2+s3*tflux3
             lc = third*total + (1-third)*lc
 
-        elif self.model == 'quad2':
+        elif self.model == 'quad1' or self.model == 'quad2':
             limb1 = Limb(Limb.POLY, self['limb1'][0])
             limb2 = Limb(Limb.POLY, self['limb2'][0])
             limb3 = Limb(Limb.POLY, self['limb3'][0])
@@ -1226,7 +1421,7 @@ class Model(dict):
         """
         Carries out crude checks of parameter values. Comes back with False if
         there is a problem. These checks are not exhaustive and don't address
-        dynamical issues.
+        dynamical issues at all.
         """
 
         if self.model == 'triple':
@@ -1245,6 +1440,30 @@ class Model(dict):
                 self['limb1'][0] >= 0. and self['limb1'][0] <= 1. and \
                 self['limb2'][0] >= 0. and self['limb2'][0] <= 1. and \
                 self['limb3'][0] >= 0. and self['limb3'][0] <= 1.
+
+        elif self.model == 'quad1':
+            return \
+                self['r1'][0] > 0 and self['r2'][0] > 0 and \
+                self['r3'][0] > 0 and self['r4'][0] > 0 and \
+                self['a1'][0] > 0 and self['a2'][0] > 0 and \
+                self['a3'][0] > 0 and self['a4'][0] > 0 and \
+                self['ab1'][0] > 0 and self['ab2'][0] > 0 and \
+                self['r1'][0] + self['r2'][0] < (self['a1'][0] + self['a2'][0])*(1-self['eb1'][0]) and \
+                self['r3'][0] + self['r4'][0] < (self['a3'][0] + self['a4'][0])*(1-self['eb2'][0]) and \
+                max(self['a1'][0]+self['r1'][0],self['a2'][0]+self['r2'][0]) + \
+                max(self['a3'][0]+self['r3'][0],self['a4'][0]+self['r4'][0]) < \
+                (self['ab1'][0] + self['ab2'][0])*(1-self['eb3'][0]) and \
+                self['eb1'][0] >= 0. and self['eb1'][0] < 1. and \
+                self['eb2'][0] >= 0. and self['eb2'][0] < 1. and \
+                self['eb3'][0] >= 0. and self['eb3'][0] < 1. and \
+                self['Pb1'][0] > 0. and self['Pb2'][0] > 0. and self['Pb3'][0] > 0. and \
+                self['s1'][0] >= 0. and self['s2'][0] >= 0. and \
+                self['s3'][0] >= 0. and self['s4'][0] >= 0. and \
+                self['third'][0] >= 0. and self['third'][0] <= 1. and \
+                self['limb1'][0] >= 0. and self['limb1'][0] <= 1. and \
+                self['limb2'][0] >= 0. and self['limb2'][0] <= 1. and \
+                self['limb3'][0] >= 0. and self['limb3'][0] <= 1. and \
+                self['limb4'][0] >= 0. and self['limb4'][0] <= 1.
 
         elif self.model == 'quad2':
             return \
