@@ -6,8 +6,8 @@ quadruples) for modelling light curves.
 import math
 from collections import OrderedDict
 import numpy as np
-from trm import orbits, subs
-from .core import Limb
+from trm import orbits
+from .core import Limb, AU, RSUN
 from . import ring
 from ._seclipse import expand, compress
 from . import disc
@@ -17,11 +17,11 @@ import time
 
 def sol2au(length):
     """Converts from solar radii to AU"""
-    return subs.RSUN*length/subs.AU
+    return RSUN*length/AU
 
 def au2sol(length):
     """Converts from AU to solar radii"""
-    return subs.AU*length/subs.RSUN
+    return AU*length/RSUN
 
 def load_data(dfile):
     """Loads a data file assumed to be in space-separated
@@ -1216,9 +1216,9 @@ class Model(dict):
             limb2 = Limb(Limb.POLY, self['limb2'][0])
             limb3 = Limb(Limb.POLY, self['limb3'][0])
 
-            s1 = self['s1'][0]*(subs.RSUN/subs.AU)**2
-            s2 = self['s2'][0]*(subs.RSUN/subs.AU)**2
-            s3 = self['s3'][0]*(subs.RSUN/subs.AU)**2
+            s1 = self['s1'][0]*(RSUN/AU)**2
+            s2 = self['s2'][0]*(RSUN/AU)**2
+            s3 = self['s3'][0]*(RSUN/AU)**2
 
             r1 = sol2au(self['r1'][0])
             r2 = sol2au(self['r2'][0])
@@ -1255,10 +1255,10 @@ class Model(dict):
             limb3 = Limb(Limb.POLY, self['limb3'][0])
             limb4 = Limb(Limb.POLY, self['limb4'][0])
 
-            s1 = self['s1'][0]*(subs.RSUN/subs.AU)**2
-            s2 = self['s2'][0]*(subs.RSUN/subs.AU)**2
-            s3 = self['s3'][0]*(subs.RSUN/subs.AU)**2
-            s4 = self['s4'][0]*(subs.RSUN/subs.AU)**2
+            s1 = self['s1'][0]*(RSUN/AU)**2
+            s2 = self['s2'][0]*(RSUN/AU)**2
+            s3 = self['s3'][0]*(RSUN/AU)**2
+            s4 = self['s4'][0]*(RSUN/AU)**2
 
             r1 = sol2au(self['r1'][0])
             r2 = sol2au(self['r2'][0])
@@ -1295,14 +1295,14 @@ class Model(dict):
             limb1 = Limb(Limb.POLY, self['limb1'][0])
             limb2 = Limb(Limb.POLY, self['limb2'][0])
 
-            s1 = self['s1'][0]*(subs.RSUN/subs.AU)**2
-            s2 = self['s2'][0]*(subs.RSUN/subs.AU)**2
-            sdisc1 = self['sdisc1'][0]*(subs.RSUN/subs.AU)**2
-            sdisc2 = self['sdisc2'][0]*(subs.RSUN/subs.AU)**2
-            sdisc3 = self['sdisc3'][0]*(subs.RSUN/subs.AU)**2
-            sdisc4 = self['sdisc4'][0]*(subs.RSUN/subs.AU)**2
-            sdisc5 = self['sdisc5'][0]*(subs.RSUN/subs.AU)**2
-            sdisc6 = self['sdisc6'][0]*(subs.RSUN/subs.AU)**2
+            s1 = self['s1'][0]*(RSUN/AU)**2
+            s2 = self['s2'][0]*(RSUN/AU)**2
+            sdisc1 = self['sdisc1'][0]*(RSUN/AU)**2
+            sdisc2 = self['sdisc2'][0]*(RSUN/AU)**2
+            sdisc3 = self['sdisc3'][0]*(RSUN/AU)**2
+            sdisc4 = self['sdisc4'][0]*(RSUN/AU)**2
+            sdisc5 = self['sdisc5'][0]*(RSUN/AU)**2
+            sdisc6 = self['sdisc6'][0]*(RSUN/AU)**2
 
             class Bright:
                 def __init__(self, sd1, sd2, sd3, sd4, sd5, sd6):

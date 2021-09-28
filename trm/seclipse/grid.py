@@ -11,7 +11,6 @@ import sys
 import math
 import numpy as np
 import numexpr as ne
-import trm.subs as subs
 
 def rfinit(r, limb, n):
     """Initialises the grid elements and flux contributions using a series of n

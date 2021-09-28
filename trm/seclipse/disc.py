@@ -7,8 +7,7 @@ import sys
 import math
 import numpy as np
 import numexpr as ne
-import trm.subs as subs
-from trm.subs import Vec3
+from trm import Vec3
 from . import ring
 from . import ring
 from ._seclipse import dflux2

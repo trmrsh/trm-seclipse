@@ -2,7 +2,10 @@ import sys
 import math
 import numpy as np
 import numexpr as ne
-import trm.subs as subs
+
+# AU and solar radius in metres
+AU = 1.4959787061e11
+RSUN =  6.9599E8
 
 def circle(phase, iangle, s1, s2, r1, r2, limb1, limb2, n1, n2, b1, b2):
     """Computes light curve for a circular orbit given phases and inclination

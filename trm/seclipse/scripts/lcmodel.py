@@ -7,9 +7,7 @@ import numpy as np
 import matplotlib
 matplotlib.use('qt5agg')
 import matplotlib.pyplot as plt
-import trm.subs.input as inp
-from trm import seclipse, orbits, subs
-from trm.subs import Vec3
+from trm import seclipse, orbits, cline
 
 def lcmodel(args=None):
     """``lcmodel model ldat data norm (time1 time2 ntime texp ndiv) plot pres
@@ -21,55 +19,55 @@ def lcmodel(args=None):
     representation of the paths of the spheres.
     """
 
-    # generate arguments
-    if args is None:
-        args = sys.argv.copy()
+    command, args = cline.script_args(args)
 
-    inpt = inp.Input('PYTHON_TRIPLE_ENV', '.pytriple', args)
+    # get the inputs
+    with cline.Cline("SECLIPSE_ENV", ".seclipse", command, args) as cl:
 
-    # register parameters
-    inpt.register('model', inp.Input.LOCAL, inp.Input.PROMPT)
-    inpt.register('ldat',  inp.Input.LOCAL, inp.Input.PROMPT)
-    inpt.register('data',  inp.Input.LOCAL, inp.Input.PROMPT)
-    inpt.register('norm',  inp.Input.LOCAL, inp.Input.PROMPT)
-    inpt.register('time1', inp.Input.LOCAL, inp.Input.PROMPT)
-    inpt.register('time2', inp.Input.LOCAL, inp.Input.PROMPT)
-    inpt.register('ntime', inp.Input.LOCAL, inp.Input.PROMPT)
-    inpt.register('texp',  inp.Input.LOCAL, inp.Input.PROMPT)
-    inpt.register('ndiv',  inp.Input.LOCAL, inp.Input.PROMPT)
-    inpt.register('plot',  inp.Input.LOCAL, inp.Input.PROMPT)
-    inpt.register('pres',  inp.Input.LOCAL, inp.Input.PROMPT)
-    inpt.register('ppath', inp.Input.LOCAL, inp.Input.PROMPT)
-    inpt.register('nbin',  inp.Input.LOCAL, inp.Input.PROMPT)
-    inpt.register('save',  inp.Input.LOCAL, inp.Input.HIDE)
-    inpt.register('reject',inp.Input.LOCAL, inp.Input.HIDE)
-    inpt.register('dout',  inp.Input.LOCAL, inp.Input.HIDE)
+        # register parameters
+        cl.register('model', cline.Cline.LOCAL, cline.Cline.PROMPT)
+        cl.register('ldat', cline.Cline.LOCAL, cline.Cline.PROMPT)
+        cl.register('data', cline.Cline.LOCAL, cline.Cline.PROMPT)
+        cl.register('norm', cline.Cline.LOCAL, cline.Cline.PROMPT)
+        cl.register('time1',cline.Cline.LOCAL, cline.Cline.PROMPT)
+        cl.register('time2', cline.Cline.LOCAL, cline.Cline.PROMPT)
+        cl.register('ntime', cline.Cline.LOCAL, cline.Cline.PROMPT)
+        cl.register('texp', cline.Cline.LOCAL, cline.Cline.PROMPT)
+        cl.register('ndiv', cline.Cline.LOCAL, cline.Cline.PROMPT)
+        cl.register('plot', cline.Cline.LOCAL, cline.Cline.PROMPT)
+        cl.register('pres', cline.Cline.LOCAL, cline.Cline.PROMPT)
+        cl.register('ppath', cline.Cline.LOCAL, cline.Cline.PROMPT)
+        cl.register('nbin', cline.Cline.LOCAL, cline.Cline.PROMPT)
+        cl.register('save', cline.Cline.LOCAL, cline.Cline.HIDE)
+        cl.register('reject',cline.Cline.LOCAL, cline.Cline.HIDE)
+        cl.register('dout', cline.Cline.LOCAL, cline.Cline.HIDE)
 
-    # get them
-    mod = inpt.get_value('model', 'light curve model', subs.Fname('lc', '.mod'))
-    model = seclipse.model.Model(mod)
+        # get them
+        mod = cl.get_value('model', 'light curve model', subs.Fname('lc', '.mod'))
+        model = seclipse.model.Model(mod)
 
-    ldat = inpt.get_value('ldat', 'load data file?', True)
-    if ldat:
-        dat  = inpt.get_value('data', 'light curve data', subs.Fname('lc', '.dat'))
-        norm = inpt.get_value('norm', 'normalise to minimize chi**2?', True)
-        plot  = inpt.get_value('plot', 'plot? (else just report chi**2)', True)
-        if plot:
-            pres = inpt.get_value('pres', 'plot residuals?', True)
-            if pres:
-                nbin = inpt.get_value('nbin', 'number of bins for residuals (0 to ignore)',
+        ldat = cl.get_value('ldat', 'load data file?', True)
+        if ldat:
+            dat  = cl.get_value('data', 'light curve data', subs.Fname('lc', '.dat'))
+            norm = cl.get_value('norm', 'normalise to minimize chi**2?', True)
+            plot  = cl.get_value('plot', 'plot? (else just report chi**2)', True)
+            if plot:
+                pres = cl.get_value('pres', 'plot residuals?', True)
+                if pres:
+                    nbin = cl.get_value('nbin', 'number of bins for residuals (0 to ignore)',
                                       1000, 0)
-            ppath = inpt.get_value('ppath', 'plot paths?', True)
-        else:
-            ppath = False
+                ppath = cl.get_value('ppath', 'plot paths?', True)
+            else:
+                ppath = False
 
-        inpt.set_default('save', False)
+            cl.set_default('save', False)
 
-        save = inpt.get_value('save', 'save data with rejection?', True)
-        reject = inpt.get_value('reject', 'rejection threshold', 5., 0.)
-        dout = inpt.get_value('dout', 'name of output file',
-                              subs.Fname('lc', '.dat', subs.Fname.NEW))
-        inpt.save()
+            save = cl.get_value('save', 'save data with rejection?', True)
+            reject = cl.get_value('reject', 'rejection threshold', 5., 0.)
+            dout = cl.get_value(
+                'dout', 'name of output file',
+                subs.Fname('lc', '.dat', subs.Fname.NEW)
+            )
 
         # Load data
         ts,tes,fs,fes,ws,nds = seclipse.model.load_data(dat)
@@ -90,7 +88,7 @@ def lcmodel(args=None):
             rej = np.abs((fs-fit)/fes) > scale*reject
 
         if plot:
-            ts += 2454833 - 2400000
+            ts += 2454833 - 2400000 - 57240
 
             plt.plot(ts,fs,'.g')
             plt.plot(ts,fit,'r')
@@ -153,7 +151,8 @@ weighting factor for chi**2, sub-division factor for exposure smearing.
         fit /= fit.max()
 
         if plot:
-            ts += 2454833 - 2400000 - 58600
+#            ts += 2454833 - 2400000 - 58600
+#            ts += 2454833 - 2400000 
             plt.plot(ts,fit,'b')
             plt.xlabel('Time [MJD - 58600]')
             plt.ylabel('Flux')
@@ -163,7 +162,7 @@ weighting factor for chi**2, sub-division factor for exposure smearing.
             header = """
 This is a model output
 
-Columns are time (BJD-2458600), exposure time (days), flux
+Columns are time (BJD-2454833), exposure time (days), flux
 
 """
             np.savetxt(
