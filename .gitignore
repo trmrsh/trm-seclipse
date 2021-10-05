@@ -1,0 +1,6 @@
+trm/seclipse/_seclipse.html
+*.egg-info
+*.pdf
+*.pyc
+build
+build/*
