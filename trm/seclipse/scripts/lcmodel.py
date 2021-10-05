@@ -5,18 +5,33 @@ import math
 import time
 import numpy as np
 import matplotlib
-matplotlib.use('qt5agg')
+#matplotlib.use('qt5agg')
 import matplotlib.pyplot as plt
 from trm import seclipse, orbits, cline
 
 def lcmodel(args=None):
-    """``lcmodel model ldat data norm (time1 time2 ntime texp ndiv) plot pres
-    ppath [save (reject dout)]``
+    """``lcmodel model dat (norm plot (pres (nbin)) | time1 time2 ntime texp ndiv)
+    (ppath) [save (reject dout)]``
 
     Compute and plots the eclipse of limb-darkened spheres. It either
     does so given an already existing data file as a template or on a
-    regularly-spaced set of times. In the latter case it will also plot a
-    representation of the paths of the spheres.
+    regularly-spaced set of times. In the latter case it will also
+    plot a representation of the paths of the spheres.
+
+    Arguments::
+
+      model : str
+         the file with the model
+
+      dat : str
+         data file to read, 'none' if there are no data to be read.
+
+      norm : bool (if data != 'none')
+         True to normalise the data to give a minimum chi**2
+
+      plot :  bool (if data != 'none')
+         True to plot
+
     """
 
     command, args = cline.script_args(args)
@@ -26,55 +41,79 @@ def lcmodel(args=None):
 
         # register parameters
         cl.register('model', cline.Cline.LOCAL, cline.Cline.PROMPT)
-        cl.register('ldat', cline.Cline.LOCAL, cline.Cline.PROMPT)
         cl.register('data', cline.Cline.LOCAL, cline.Cline.PROMPT)
         cl.register('norm', cline.Cline.LOCAL, cline.Cline.PROMPT)
         cl.register('time1',cline.Cline.LOCAL, cline.Cline.PROMPT)
+        cl.register('plot', cline.Cline.LOCAL, cline.Cline.PROMPT)
+        cl.register('pres', cline.Cline.LOCAL, cline.Cline.PROMPT)
+        cl.register('nbin', cline.Cline.LOCAL, cline.Cline.PROMPT)
         cl.register('time2', cline.Cline.LOCAL, cline.Cline.PROMPT)
         cl.register('ntime', cline.Cline.LOCAL, cline.Cline.PROMPT)
         cl.register('texp', cline.Cline.LOCAL, cline.Cline.PROMPT)
         cl.register('ndiv', cline.Cline.LOCAL, cline.Cline.PROMPT)
-        cl.register('plot', cline.Cline.LOCAL, cline.Cline.PROMPT)
-        cl.register('pres', cline.Cline.LOCAL, cline.Cline.PROMPT)
         cl.register('ppath', cline.Cline.LOCAL, cline.Cline.PROMPT)
-        cl.register('nbin', cline.Cline.LOCAL, cline.Cline.PROMPT)
-        cl.register('save', cline.Cline.LOCAL, cline.Cline.HIDE)
-        cl.register('reject',cline.Cline.LOCAL, cline.Cline.HIDE)
-        cl.register('dout', cline.Cline.LOCAL, cline.Cline.HIDE)
+        cl.register('sdata', cline.Cline.LOCAL, cline.Cline.PROMPT)
+        cl.register('reject',cline.Cline.LOCAL, cline.Cline.PROMPT)
+        cl.register('dout', cline.Cline.LOCAL, cline.Cline.PROMPT)
 
         # get them
-        mod = cl.get_value('model', 'light curve model', subs.Fname('lc', '.mod'))
+        mod = cl.get_value('model', 'light curve model', cline.Fname('lc', '.mod'))
         model = seclipse.model.Model(mod)
 
-        ldat = cl.get_value('ldat', 'load data file?', True)
-        if ldat:
-            dat  = cl.get_value('data', 'light curve data', subs.Fname('lc', '.dat'))
+        dat  = cl.get_value(
+            'data', "light curve data ['none' to sidestep]",
+            cline.Fname('lc', '.dat'),
+            ignore='none'
+        )
+        if dat is not None:
+            # load data
             norm = cl.get_value('norm', 'normalise to minimize chi**2?', True)
             plot  = cl.get_value('plot', 'plot? (else just report chi**2)', True)
             if plot:
                 pres = cl.get_value('pres', 'plot residuals?', True)
                 if pres:
-                    nbin = cl.get_value('nbin', 'number of bins for residuals (0 to ignore)',
-                                      1000, 0)
+                    nbin = cl.get_value(
+                        'nbin', 'number of bins for residuals (0 to ignore)', 1000, 0
+                    )
                 ppath = cl.get_value('ppath', 'plot paths?', True)
             else:
                 ppath = False
 
-            cl.set_default('save', False)
+            sdata = cl.get_value('sdata', 'save data with rejection?', True)
+            if sdata:
+                reject = cl.get_value('reject', 'rejection threshold', 5., 0.)
+                dout = cl.get_value(
+                    'dout', 'name of output file', cline.Fname('lc', '.dat', cline.Fname.NEW)
+                )
 
-            save = cl.get_value('save', 'save data with rejection?', True)
-            reject = cl.get_value('reject', 'rejection threshold', 5., 0.)
-            dout = cl.get_value(
-                'dout', 'name of output file',
-                subs.Fname('lc', '.dat', subs.Fname.NEW)
-            )
+        else:
 
-        # Load data
+            # create regularly spaced data
+            time1 = inpt.get_value('time1', 'start time', 0.)
+            time2 = inpt.get_value('time2', 'end time', 100.)
+            ntime = inpt.get_value('ntime', 'number of times', 2)
+            texp = inpt.get_value('texp', 'exposure time', 0.01, 0.)
+            ndiv = inpt.get_value('ndiv', 'sub-division factor to smear exposures', 1, 1)
+            smod = inpt.get_value('smod', 'save model?', True)
+            if smod:
+                dout = inpt.get_value(
+                    'dout', 'name of output file',
+                    subs.Fname('lc', '.dat', subs.Fname.NEW)
+                )
+            plot  = True
+            ppath = cl.get_value('ppath', 'plot paths?', True)
+
+    # inputs obtained. do something
+
+    if dat is not None:
+
+        # Load data case
+
         ts,tes,fs,fes,ws,nds = seclipse.model.load_data(dat)
-
         fit = model.fit(ts,tes,nds)
 
         if norm:
+            # normalise for minimum chi-squared
             sfac = seclipse.model.calc_sfac(fit, fs, fes, ws)
             fit *= sfac
             print('Scaled by',sfac)
@@ -83,9 +122,25 @@ def lcmodel(args=None):
             chisq = (wgts*(fs-fit)**2).sum()
             print('Weighted chisq =',chisq)
 
-        if save:
+        if sdata:
             scale = np.sqrt((((fs-fit)/fes)**2).sum()/len(fs))
             rej = np.abs((fs-fit)/fes) > scale*reject
+            header = """
+This file was output by lcmodel after rejecting bad data
+
+Columns are time (BJD-2454833), exposure time (days), flux, error in flux,
+weighting factor for chi**2, sub-division factor for exposure smearing.
+
+            """
+            np.savetxt(
+                dout,
+                np.column_stack(
+                    [ts[~rej], tes[~rej], fs[~rej],
+                     fes[~rej], ws[~rej], nds[~rej]]
+                ),
+                '%14.9f %9.3e %8.6f %8.6f %4.2f %2d',
+                header=header
+            )
 
         if plot:
             ts += 2454833 - 2400000 - 57240
@@ -105,60 +160,32 @@ def lcmodel(args=None):
                 else:
                     plt.plot(ts,fs-fit+0.88,'.b')
 
-                if save:
+                if sdata:
                     plt.plot(ts[rej],fs[rej]-fit[rej]+0.88,'or')
-                    header = """
-This file was output by lcmodel after rejecting bad data
-
-Columns are time (BJD-2454833), exposure time (days), flux, error in flux,
-weighting factor for chi**2, sub-division factor for exposure smearing.
-
-"""
-                    np.savetxt(dout,
-                               np.column_stack(
-                                   [ts[~rej], tes[~rej], fs[~rej],
-                                    fes[~rej], ws[~rej], nds[~rej]]),
-                               '%14.9f %9.3e %8.6f %8.6f %4.2f %2d',
-                               header=header)
 
             plt.xlabel('Time [MJD]')
             plt.ylabel('Flux')
             plt.show()
 
     else:
-        time1 = inpt.get_value('time1', 'start time', 0.)
-        time2 = inpt.get_value('time2', 'end time', 100.)
-        ntime = inpt.get_value('ntime', 'number of times', 2)
-        texp  = inpt.get_value('texp', 'exposure time', 0.01, 0.)
-        ndiv  = inpt.get_value('ndiv', 'sub-division factor to smear exposures',
-                               1, 1)
-        save = inpt.get_value('save', 'save model?', True)
-        if save:
-            dout = inpt.get_value(
-                'dout', 'name of output file',
-                subs.Fname('lc', '.dat', subs.Fname.NEW)
-            )
-        plot  = True
-        ppath = inpt.get_value('ppath', 'plot paths?', True)
-        inpt.save()
-
+        # no data case
         ts = np.linspace(time1, time2, ntime)
         tes = texp*np.ones_like(ts)
         nds = ndiv*np.ones_like(ts,dtype=np.int)
         t0 = time.time()
         fit = model.fit(ts,tes,nds)
 
-        fit /= fit.max()
+    fit /= fit.max()
 
-        if plot:
-#            ts += 2454833 - 2400000 - 58600
-#            ts += 2454833 - 2400000 
-            plt.plot(ts,fit,'b')
-            plt.xlabel('Time [MJD - 58600]')
-            plt.ylabel('Flux')
-            plt.show()
+    if plot:
+        #            ts += 2454833 - 2400000 - 58600
+        #            ts += 2454833 - 2400000
+        plt.plot(ts,fit,'b')
+        plt.xlabel('Time [MJD - 58600]')
+        plt.ylabel('Flux')
+        plt.show()
 
-        if save:
+        if sdata:
             header = """
 This is a model output
 
@@ -280,3 +307,4 @@ Columns are time (BJD-2454833), exposure time (days), flux
         ax2.set_ylim(-3*r3,3*r3)
 
         plt.show()
+
