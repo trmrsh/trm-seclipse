@@ -21,17 +21,17 @@ setup(name='trm.seclipse',
       packages=find_packages(exclude=['docs', 'tests']),
       ext_modules=cythonize(seclipse),
 
-      entry_points = {
-          'console_scripts' : [
-              'cpaths=trm.seclipse.scripts.cpaths:cpaths',
-              'lcmodel=trm.seclipse.scripts.lcmodel:lcmodel',
-              'masses=trm.seclipse.scripts.masses:masses',
-              'mcmc=trm.seclipse.scripts.mcmc:mcmc',
-              'ppath=trm.seclipse.scripts.ppath:ppath',
-              'ppxy=trm.seclipse.scripts.ppxy:ppxy',
-              'ppxz=trm.seclipse.scripts.ppxz:ppxz',
-          ]
-      },
+#      entry_points = {
+#          'console_scripts' : [
+#              'cpaths=trm.seclipse.scripts.cpaths:cpaths',
+#              'lcmodel=trm.seclipse.scripts.lcmodel:lcmodel',
+#              'masses=trm.seclipse.scripts.masses:masses',
+#              'mcmc=trm.seclipse.scripts.mcmc:mcmc',
+#              'ppath=trm.seclipse.scripts.ppath:ppath',
+#              'ppxy=trm.seclipse.scripts.ppxy:ppxy',
+#              'ppxz=trm.seclipse.scripts.ppxz:ppxz',
+#          ]
+#      },
 
       # metadata
       author='Tom Marsh',
