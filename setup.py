@@ -9,7 +9,7 @@ from Cython.Build import cythonize
 seclipse = [Extension(
     'trm.seclipse._seclipse',
     [os.path.join('trm','seclipse','_seclipse.pyx')],
-    libraries=["m"],
+#    libraries=["m"],
     include_dirs=[numpy.get_include()],
     extra_compile_args=["-fno-strict-aliasing"],
     define_macros   = [('MAJOR_VERSION', '0'),
