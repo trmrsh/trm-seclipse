@@ -164,6 +164,12 @@ def mcmc(args=None):
        stretch : float
           emcee stretch factor
 
+       dlnpmax : float
+          maximum drop in ln(post) to accept when setting up walkers
+          with respect to initial model. This is to reduce chances of
+          totally wrong models which then never get removed. Don't make
+          it too small or you won't get a starter set.
+
        log : str
           log file to store results (can be old)
 
@@ -187,6 +193,7 @@ def mcmc(args=None):
         cl.register('nthreads', Cline.LOCAL, Cline.PROMPT)
         cl.register('soft', Cline.LOCAL, Cline.PROMPT)
         cl.register('stretch', Cline.LOCAL, Cline.PROMPT)
+        cl.register('dlnpmax', Cline.LOCAL, Cline.PROMPT)
         cl.register('log', Cline.LOCAL, Cline.PROMPT)
         cl.register('best', Cline.LOCAL, Cline.PROMPT)
 
@@ -212,6 +219,9 @@ def mcmc(args=None):
             'soft', 'softening factor to scale chi**2 down', 1., 1.e-20
         )
         stretch = cl.get_value('stretch', 'stretch factor for emcee', 2.0, 1.1)
+        dlnpmax = cl.get_value(
+            'dlnpmax', 'maximum difference in ln(post)', 1000., 10.
+        )
 
         log = cl.get_value(
             'log', 'MCMC log file',
@@ -230,27 +240,31 @@ def mcmc(args=None):
     else:
         print('Using prior defined in Prior.py')
 
+    # Create ln(posterior) function object
+    lnpost = Lnpost(model, t, te,f, fe, w, nd, soft)
+
     # Generate nwalker "walkers" to start emcee by randomly perturbing
     # around the starting model. We ensure the starting model is the
     # first one and that all models are initially viable, but give up
     # if we can't do so after trying 10x nwalker models.
 
     start, sigma = model.cvars()
+    lpstart,_d,_d = lnpost(start)
+
     walkers = [start,]
     n = 1
     while n < nwalker:
         p = np.random.normal(start,sigma)
         model.update(p)
         if model.adjust() and model.ok():
-            walkers.append(p)
-            n += 1
-            if n > 10*nwalker:
-                print('Tried > 10x nwalker models but have still not found')
-                print('nwalker =',nwalker,'good ones. Giving up. Sorry.')
-                exit(1)
-
-    # Create ln(posterior) function object
-    lnpost = Lnpost(model, t, te,f, fe, w, nd, soft)
+            lp,_d,_d= lnpost(p)
+            if lpstart - lp < dlpmax:
+                walkers.append(p)
+                n += 1
+                if n > 10*nwalker:
+                    print('Tried > 10x nwalker models but have still not found')
+                    print('nwalker =',nwalker,'good ones. Giving up. Sorry.')
+                    exit(1)
 
     # Name & type the "blobs" (emcee terminology). Must match order
     # returned by Lnpost.__call__ (after the lnpost value)
