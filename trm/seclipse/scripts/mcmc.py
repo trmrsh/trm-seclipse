@@ -117,7 +117,7 @@ class Lnpost(object):
 
 def mcmc(args=None):
 
-    """``mcmc model data nwalker nstore ntrial nthreads soft stretch log best''
+    """``mcmc model data nwalker nstore ntrial nthreads soft stretch sfac log best''
 
     Carries out MCMC iterations of multi-sphere light curve model.
 
@@ -164,11 +164,10 @@ def mcmc(args=None):
        stretch : float
           emcee stretch factor
 
-       dlnpmax : float
-          maximum drop in ln(post) to accept when setting up walkers
-          with respect to initial model. This is to reduce chances of
-          totally wrong models which then never get removed. Don't make
-          it too small or you won't get a starter set.
+       sfac : float
+          factor to scale perturbations at start when initialising. If
+          small, avoids models wandering too far from where they can
+          never be recovered.
 
        log : str
           log file to store results (can be old)
@@ -193,7 +192,7 @@ def mcmc(args=None):
         cl.register('nthreads', Cline.LOCAL, Cline.PROMPT)
         cl.register('soft', Cline.LOCAL, Cline.PROMPT)
         cl.register('stretch', Cline.LOCAL, Cline.PROMPT)
-        cl.register('dlnpmax', Cline.LOCAL, Cline.PROMPT)
+        cl.register('sfac', Cline.LOCAL, Cline.PROMPT)
         cl.register('log', Cline.LOCAL, Cline.PROMPT)
         cl.register('best', Cline.LOCAL, Cline.PROMPT)
 
@@ -219,8 +218,8 @@ def mcmc(args=None):
             'soft', 'softening factor to scale chi**2 down', 1., 1.e-20
         )
         stretch = cl.get_value('stretch', 'stretch factor for emcee', 2.0, 1.1)
-        dlnpmax = cl.get_value(
-            'dlnpmax', 'maximum difference in ln(post)', 1000., 10.
+        sfac = cl.get_value(
+            'sfac', 'scaling factor for initialising walkers', 0.01, 1e-10
         )
 
         log = cl.get_value(
@@ -249,22 +248,20 @@ def mcmc(args=None):
     # if we can't do so after trying 10x nwalker models.
 
     start, sigma = model.cvars()
-    lpstart,_d,_d = lnpost(start)
 
     walkers = [start,]
     n = 1
-    while n < nwalker:
-        p = np.random.normal(start,sigma)
+    while len(walkers) < nwalker:
+        p = np.random.normal(start,sfac*sigma)
         model.update(p)
         if model.adjust() and model.ok():
-            lp,_d,_d= lnpost(p)
-            if lpstart - lp < dlnpmax:
-                walkers.append(p)
-                n += 1
-                if n > 10*nwalker:
-                    print('Tried > 10x nwalker models but have still not found')
-                    print('nwalker =',nwalker,'good ones. Giving up. Sorry.')
-                    exit(1)
+            walkers.append(p)
+
+        n += 1
+        if n > 10*nwalker:
+            print(f'Tried {n} models but have only found {len(walkers)}')
+            print('good ones. Giving up.')
+            exit(1)
 
     # Name & type the "blobs" (emcee terminology). Must match order
     # returned by Lnpost.__call__ (after the lnpost value)
