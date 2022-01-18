@@ -258,7 +258,7 @@ def mcmc(args=None):
         model.update(p)
         if model.adjust() and model.ok():
             lp,_d,_d= lnpost(p)
-            if lpstart - lp < dlpmax:
+            if lpstart - lp < dlnpmax:
                 walkers.append(p)
                 n += 1
                 if n > 10*nwalker:
