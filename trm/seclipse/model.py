@@ -88,95 +88,95 @@ class Model(dict):
 
     Triple parameters::
 
-      r1      : (float)
+      r1 : float
          radius of star 1 [solar]
 
-      r2      : (float)
+      r2 : float
          radius of star 2 [solar]
 
-      r3      : (float)
+      r3 : float
          radius of star 3 [solar]
 
-      a1      : (float)
+      a1 : float
          semi-major axis of star 1 around binary 1's CoM [solar]
 
-      a2      : (float)
+      a2 : float
          semi-major axis of star 2 around binary 1's CoM [solar]
 
-      a3      : (float)
+      a3 : float
          semi-major axis of star 3 around system CoM [solar]
 
-      ab      : (float)
+      ab : float
          semi-major axis of binary 1 rel. to system CoM [solar]
 
-      eb1     : (float)
+      eb1 : float
          eccentricity of binary 1
 
-      eb2     : (float)
+      eb2 : float
          eccentricity of binary 2
 
-      omegab1 : (float)
+      omegab1 : float
          argument of periapsis of binary 1 [degrees]
 
-      omegab2 : (float)
+      omegab2 : float
          argument of periapsis of binary 2 [degrees]
 
-      Pb1     : (float)
+      Pb1 : float
          period of binary 1 [days]
 
-      Pb2     : (float)
+      Pb2 : float
          period of binary 2 [days]
 
-      ib1     : (float)
+      ib1 : float
          inclination of binary 1 [degrees]
 
-      ib2     : (float)
+      ib2 : float
          inclination of binary 2 [degrees]
 
-      OMEGAb1 : (float)
+      OMEGAb1 : float
          longitude of ascending node of binary 1 [degrees]
 
-      OMEGAb2 : (float)
+      OMEGAb2 : float
          longitude of ascending node of binary 2 [degrees]
 
-      t0b1    : (float)
+      t0b1 : float
          zeropoint of binary 1 [days]
 
-      t0b2    : (float)
+      t0b2 : float
          zeropoint of binary 2 [days]
 
-      s1      : (float)
+      s1 : float
          surface brightness of star 1
 
-      s2      : (float)
+      s2 : float
          surface brightness of star 2
 
-      s3      : (float)
+      s3 : float
          surface brightness of star 3
 
-      third   : (float)
+      third : float
          fractional "third" light, i.e. extra light from something other
          than stellar components. Range 0 to 1.
 
-      limb1   : (float)
+      limb1 : float
          linear limb darkening coeff of star 1
 
-      limb2   : (float)
+      limb2 : float
          linear limb darkening coeff of star 2
 
-      limb3   : (float)
+      limb3 : float
          linear limb darkening coeff of star 3
 
-      n1      : (int)
+      n1 : int
          number of annuli over face of star 1
 
-      n2      : (int)
+      n2 : int
          number of annuli over face of star 2
 
-      n3      : (int)
+      n3 : int
          number of annuli over face of star 3
 
-      ttype   : (int)
+      ttype : int
          type of t0. 1 = time of periastron. 2 = time of eclipse.
          The latter is more directly fixed by the data
 
@@ -198,131 +198,131 @@ class Model(dict):
 
     Quad2 parameters::
 
-      r1      : (float)
+      r1 : float
          radius of star 1 [solar]
 
-      r2      : (float)
+      r2 : float
          radius of star 2 [solar]
 
-      r3      : (float)
+      r3 : float
          radius of star 3 [solar]
 
-      r4      : (float)
+      r4 : float
          radius of star 4 [solar]
 
-      a1      : (float)
+      a1 : float
          semi-major axis of star 1 around binary 1's CoM [solar]
 
-      a2      : (float)
+      a2 : float
          semi-major axis of star 2 around binary 1's CoM [solar]
 
-      a3      : (float)
+      a3 : float
          semi-major axis of star 3 around system CoM [solar]
 
-      a4      : (float)
+      a4 : float
          semi-major axis of star 4 around binary 2's CoM [solar]
 
-      ab1     : (float)
+      ab1 : float
          semi-major axis of binary 1 rel. to binary 2's CoM [solar]
 
-      ab2     : (float)
+      ab2 : float
          semi-major axis of binary 2 rel. to system CoM [solar]
 
-      eb1     : (float)
+      eb1 : float
          eccentricity of binary 1
 
-      eb2     : (float)
+      eb2 : float
          eccentricity of binary 2
 
-      eb3     : (float)
+      eb3 : float
          eccentricity of binary 3
 
-      omegab1 : (float)
+      omegab1 : float
          argument of periapsis of binary 1 [degrees]
 
-      omegab2 : (float)
+      omegab2 : float
          argument of periapsis of binary 2 [degrees]
 
-      omegab3 : (float)
+      omegab3 : float
          argument of periapsis of the ((1+2)+4) / 3 orbit [degrees]
 
-      Pb1     : (float)
+      Pb1 : float
          period of binary 1 [days]
 
-      Pb2     : (float)
+      Pb2 : float
          period of binary 2 [days]
 
-      Pb3     : (float)
+      Pb3 : float
          period of binary 3 [days]
 
-      ib1     : (float)
+      ib1 : float
          inclination of binary 1 [degrees]
 
-      ib2     : (float)
+      ib2 : float
          inclination of binary 2 [degrees]
 
-      ib3     : (float)
+      ib3 : float
          inclination of binary 3 [degrees]
 
-      OMEGAb1 : (float)
+      OMEGAb1 : float
          longitude of ascending node of binary 1 [degrees]
 
-      OMEGAb2 : (float)
+      OMEGAb2 : float
          longitude of ascending node of binary 2 [degrees]
 
-      OMEGAb3 : (float)
+      OMEGAb3 : float
          longitude of ascending node of binary 3 [degrees]
 
-      t0b1    : (float)
+      t0b1 : float
          zeropoint of binary 1 [days]
 
-      t0b2    : (float)
+      t0b2 : float
          zeropoint of binary 2 [days]
 
-      t0b3     : (float)
+      t0b3 : float
          zeropoint of binary 3 [days]
 
-      s1      : (float)
+      s1 : float
          surface brightness of star 1
 
-      s2      : (float)
+      s2 : float
          surface brightness of star 2
 
-      s3      : (float)
+      s3 : float
          surface brightness of star 3
 
-      s4      : (float)
+      s4 : float
          surface brightness of star 4
 
-      third   : (float)
+      third : float
          fractional "third" light, i.e. extra light from something other
          than stellar components. Range 0 to 1.
 
-      limb1   : (float)
+      limb1 : float
          linear limb darkening coeff of star 1
 
-      limb2   : (float)
+      limb2 : float
          linear limb darkening coeff of star 2
 
-      limb3   : (float)
+      limb3 : float
          linear limb darkening coeff of star 3
 
-      limb4   : (float)
+      limb4 : float
          linear limb darkening coeff of star 4
 
-      n1      : (int)
+      n1 : int)
          number of annuli over face of star 1
 
-      n2      : (int)
+      n2 : int
          number of annuli over face of star 2
 
-      n3      : (int)
+      n3 : int
          number of annuli over face of star 3
 
-      n4      : (int)
+      n4 : int
          number of annuli over face of star 4
 
-      ttype   : (int)
+      ttype : int
          type of t0. 1 = time of periastron. 2 = time of eclipse.
          The latter is more directly fixed by the data
 
@@ -337,104 +337,104 @@ class Model(dict):
 
     Tdisc parameters::
 
-      r1        : (float)
+      r1 : float
          radius of star 1 [solar]
 
-      r2        : (float)
+      r2 : float
          radius of star 2 [solar]
 
-      rdisc     : (float)
+      rdisc : float
          radius of the disc [solar]
 
-      a1        : (float)
+      a1 : float
          semi-major axis of star 1 around binary 1's CoM [solar]
 
-      a2        : (float)
+      a2 : float
          semi-major axis of star 2 around binary 1's CoM [solar]
 
-      adisc     : (float)
+      adisc : float
          semi-major axis of disc around system CoM [solar]
 
-      ab        : (float)
+      ab : float
          semi-major axis of binary 1 rel. to system CoM [solar]
 
-      eb1       : (float)
+      eb1 : float
          eccentricity of binary 1
 
-      eb2       : (float)
+      eb2 : float
          eccentricity of binary 2
 
-      omegab1   : (float)
+      omegab1 : float
          argument of periapsis of binary 1 [degrees]
 
-      omegab2   : (float)
+      omegab2 : float
          argument of periapsis of binary 2 [degrees]
 
-      Pb1       : (float)
+      Pb1 : float
          period of binary 1 [days]
 
-      Pb2       : (float)
+      Pb2 : float
          period of binary 2 [days]
 
-      ib1       : (float)
+      ib1 : float
          inclination of binary 1 [degrees]
 
-      ib2       : (float)
+      ib2 : float
          inclination of binary 2 [degrees]
 
-      idisc     : (float)
+      idisc : float
          inclination of disc [degrees]
 
-      OMEGAb1   : (float)
+      OMEGAb1 : float
          longitude of ascending node of binary 1 [degrees]
 
-      OMEGAb2   : (float)
+      OMEGAb2 : float
          longitude of ascending node of binary 2 [degrees]
 
-      OMEGAdisc : (float)
+      OMEGAdisc : float
          longitude of ascending node of disc [degrees]
 
-      t0b1    : (float)
+      t0b1 : (float
          zeropoint of binary 1 [days]
 
-      t0b2    : (float)
+      t0b2 : float
          zeropoint of binary 2 [days]
 
-      s1      : (float)
+      s1 : float
          surface brightness of star 1
 
-      s2      : (float)
+      s2 : float
          surface brightness of star 2
 
-      sdisc1  : (float)
+      sdisc1 : float
          surface brightness of disc [constant coefficient of poly]
 
-      sdisc2  : (float)
+      sdisc2 : float
          surface brightness of disc [linear coefficient of poly]
 
-      sdisc3  : (float)
+      sdisc3 : float
          surface brightness of disc [quadratic coefficient of poly]
 
-      third   : (float)
+      third : float
          fractional "third" light, i.e. extra light from something other
          than stellar components. Range 0 to 1.
 
-      limb1   : (float)
+      limb1 : float
          linear limb darkening coeff of star 1
 
-      limb2   : (float)
+      limb2 : float
          linear limb darkening coeff of star 2
 
-      n1      : (int)
+      n1 : int
          number of annuli over face of star 1
 
-      n2      : (int)
+      n2 : int
          number of annuli over face of star 2
 
-      ndisc   : (int)
+      ndisc : int
          number of annuli over face of disc
 
-      ttype   : (int)
+      ttype : int
          type of t0. 1 = time of periastron. 2 = time of eclipse.
          The latter is more directly fixed by the data
 
@@ -445,111 +445,111 @@ class Model(dict):
 
     Tdisc parameters::
 
-      r1        : (float)
+      r1 : float
          radius of star 1 [solar]
 
-      r2        : (float)
+      r2 : float
          radius of star 2 [solar]
 
-      rdisc     : (float)
+      rdisc : float
          radius of the disc [solar]
 
-      a1        : (float)
+      a1 : float
          semi-major axis of star 1 around binary 1's CoM [solar]
 
-      a2        : (float)
+      a2 : float
          semi-major axis of star 2 around binary 1's CoM [solar]
 
-      adisc     : (float)
+      adisc : float
          semi-major axis of disc around system CoM [solar]
 
-      ab        : (float)
+      ab : float
          semi-major axis of binary 1 rel. to system CoM [solar]
 
-      eb1       : (float)
+      eb1 : float
          eccentricity of binary 1
 
-      eb2       : (float)
+      eb2 : float
          eccentricity of binary 2
 
-      omegab1   : (float)
+      omegab1 : float
          argument of periapsis of binary 1 [degrees]
 
-      omegab2   : (float)
+      omegab2 : float
          argument of periapsis of binary 2 [degrees]
 
-      Pb1       : (float)
+      Pb1 : float
          period of binary 1 [days]
 
-      Pb2       : (float)
+      Pb2 : float
          period of binary 2 [days]
 
-      ib1       : (float)
+      ib1 : float
          inclination of binary 1 [degrees]
 
-      ib2       : (float)
+      ib2 : float
          inclination of binary 2 [degrees]
 
-      OMEGAb1   : (float)
+      OMEGAb1 : float
          longitude of ascending node of binary 1 [degrees]
 
-      OMEGAb2   : (float)
+      OMEGAb2 : float
          longitude of ascending node of binary 2 [degrees]
 
-      t0b1    : (float)
+      t0b1 : float
          zeropoint of binary 1 [days]
 
-      t0b2    : (float)
+      t0b2 : float
          zeropoint of binary 2 [days]
 
-      s1      : (float)
+      s1 : float
          surface brightness of star 1
 
-      s2      : (float)
+      s2 : float
          surface brightness of star 2
 
-      sdisc1  : (float)
+      sdisc1 : float
          surface brightness of disc [constant coefficient of poly]
 
-      sdisc2  : (float)
+      sdisc2 : float
          surface brightness of disc [linear coefficient of poly]
 
-      sdisc3  : (float)
+      sdisc3 : float
          surface brightness of disc [quadratic coefficient of poly]
 
-      third   : (float)
+      third : float
          fractional "third" light, i.e. extra light from something other
          than stellar components. Range 0 to 1.
 
-      limb1   : (float)
+      limb1 : float
          linear limb darkening coeff of star 1
 
-      limb2   : (float)
+      limb2 : float
          linear limb darkening coeff of star 2
 
-      n1      : (int)
+      n1 : int
          number of annuli over face of star 1
 
-      n2      : (int)
+      n2 : int
          number of annuli over face of star 2
 
-      ndisc   : (int)
+      ndisc : int
          number of annuli over face of disc
 
-      ttype   : (int)
+      ttype : int
          type of t0. 1 = time of periastron. 2 = time of eclipse.
          The latter is more directly fixed by the data
 
-      idisc1    : (float)
+      idisc1 : float
          inclination of disc, event 1 [degrees]
 
-      OMEGAdisc1: (float)
+      OMEGAdisc1 : float
          longitude of ascending node of disc, event 1 [degrees]
 
-      idisc2    : (float)
+      idisc2 : float
          inclination of disc, event 1 [degrees]
 
-      OMEGAdisc2: (float)
+      OMEGAdisc2 : float
          longitude of ascending node of disc, event 1 [degrees]
 
       etc, up to #7 one for each event.
@@ -564,133 +564,133 @@ class Model(dict):
     axes where I think it is more memorable to try to use values that are
     associated with the stars where possible.
 
-    Quad2 parameters::
+    Quad1 parameters::
 
-      r1      : (float)
+      r1 : float
          radius of star 1 [solar]
 
-      r2      : (float)
+      r2 : float
          radius of star 2 [solar]
 
-      r3      : (float)
+      r3 : float
          radius of star 3 [solar]
 
-      r4      : (float)
+      r4 : float
          radius of star 4 [solar]
 
-      a1      : (float)
+      a1 : float
          semi-major axis of star 1 around binary 1's CoM [solar]
 
-      a2      : (float)
+      a2 : float
          semi-major axis of star 2 around binary 1's CoM [solar]
 
-      a3      : (float)
+      a3 : float
          semi-major axis of star 3 around binary 2's CoM [solar]
 
-      a4      : (float)
+      a4 : float
          semi-major axis of star 4 around binary 2's CoM [solar]
 
-      ab1     : (float)
+      ab1 : float
          semi-major axis of binary 1 rel. to system CoM [solar]
 
-      ab2     : (float)
+      ab2 : float
          semi-major axis of binary 2 rel. to system CoM [solar]
 
-      eb1     : (float)
+      eb1 : float
          eccentricity of binary 1
 
-      eb2     : (float)
+      eb2 : float
          eccentricity of binary 2
 
-      eb3     : (float)
+      eb3 : float
          eccentricity of binary 3 formed of 1+2 and 3+4
 
-      omegab1 : (float)
+      omegab1 : float
          argument of periapsis of binary 1 [degrees]
 
-      omegab2 : (float)
+      omegab2 : float
          argument of periapsis of binary 2 [degrees]
 
-      omegab3 : (float)
+      omegab3 : float
          argument of periapsis of binary 3 [degrees]
 
-      Pb1     : (float)
+      Pb1 : float
          period of binary 1 [days]
 
-      Pb2     : (float)
+      Pb2 : float
          period of binary 2 [days]
 
-      Pb3     : (float)
+      Pb3 : float
          period of binary 3 [days]
 
-      ib1     : (float)
+      ib1 : float
          inclination of binary 1 [degrees]
 
-      ib2     : (float)
+      ib2 : float
          inclination of binary 2 [degrees]
 
-      ib3     : (float)
+      ib3 : float
          inclination of binary 3 [degrees]
 
-      OMEGAb1 : (float)
+      OMEGAb1 : float
          longitude of ascending node of binary 1 [degrees]
 
-      OMEGAb2 : (float)
+      OMEGAb2 : float
          longitude of ascending node of binary 2 [degrees]
 
-      OMEGAb3 : (float)
+      OMEGAb3 : float
          longitude of ascending node of binary 3 [degrees]
 
-      t0b1    : (float)
+      t0b1 : float
          zeropoint of binary 1 [days]
 
-      t0b2    : (float)
+      t0b2 : float
          zeropoint of binary 2 [days]
 
-      t0b3     : (float)
+      t0b3 : float
          zeropoint of binary 3 [days]
 
-      s1      : (float)
+      s1 : float
          surface brightness of star 1
 
-      s2      : (float)
+      s2 : float
          surface brightness of star 2
 
-      s3      : (float)
+      s3 : float
          surface brightness of star 3
 
-      s4      : (float)
+      s4 : float
          surface brightness of star 4
 
-      third   : (float)
+      third : float
          fractional "third" light, i.e. extra light from something other
          than stellar components. Range 0 to 1.
 
-      limb1   : (float)
+      limb1 : float
          linear limb darkening coeff of star 1
 
-      limb2   : (float)
+      limb2 : float
          linear limb darkening coeff of star 2
 
-      limb3   : (float)
+      limb3 : float
          linear limb darkening coeff of star 3
 
-      limb4   : (float)
+      limb4 : float
          linear limb darkening coeff of star 4
 
-      n1      : (int)
+      n1 : int
          number of annuli over face of star 1
 
-      n2      : (int)
+      n2 : int
          number of annuli over face of star 2
 
-      n3      : (int)
+      n3 : int
          number of annuli over face of star 3
 
-      n4      : (int)
+      n4 : int
          number of annuli over face of star 4
 
-      ttype   : (int)
+      ttype : int
          type of t0. 1 = time of periastron. 2 = time of eclipse.
          The latter is more directly fixed by the data
 
@@ -1137,7 +1137,7 @@ class Model(dict):
 
     def prior(self):
         """
-        Returns -2*ln(prior) [suitable for adding to chisq]  based
+        Returns ln(prior) [suitable for adding to chisq]  based
         upon timing model. This is over-ridden in derived class used
         to re-define the prior through an input file.
         """
@@ -1146,7 +1146,7 @@ class Model(dict):
     def adjust(self):
         """
         This is meant to be a routine over-ridden in a derived class
-        that adjust certain model parameters in the light of others.
+        that adjusts certain model parameters in the light of others.
         In some cases this can by-pass the need for prior constraints.
         e.g. in the quadratic mode2 model, "a4" can be fixed once "ab1"
         is set. It must return a boolean status to say whether it has run
@@ -1198,13 +1198,13 @@ class Model(dict):
 
         Arguments::
 
-          ts   : (array)
+          ts : array
              mid-times [days]
 
-          tes  : (array)
+          tes : array
              exposure times [days]
 
-          nds  : (array)
+          nds : array
              integer sub-division factors to smear exposures.
         """
 

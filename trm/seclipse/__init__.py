@@ -12,4 +12,4 @@ from . import grid
 from . import ring
 from . import disc
 from . import model
-#from . import scripts
+from . import scripts

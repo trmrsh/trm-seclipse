@@ -7,12 +7,12 @@ from .masses import masses
 from .mcmc import mcmc
 
 __all__ = [ \
-            'cpaths',
-            'lcmodel',
-            'masses',
+#            'cpaths',
+#            'lcmodel',
+#            'masses',
             'mcmc',
-            'ppath',
-            'ppxy',
-            'ppxz',
+#            'ppath',
+#            'ppxy',
+#            'ppxz',
         ]
 

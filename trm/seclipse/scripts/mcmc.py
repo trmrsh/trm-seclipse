@@ -1,14 +1,18 @@
 #!/usr/bin/env python
 
+# standard
 import sys
 import os
 import math as m
 import numpy as np
+from multiprocessing import Pool
+
+# third party 
 import emcee
-from trm import subs
-import trm.subs.input as inp
-from trm import seclipse
-from trm import mcmc as MCMC
+
+# mine
+from trm import cline, seclipse
+from trm.cline import Cline
 
 try:
     # Import Dmodel defined in Prior.py in directory
@@ -23,6 +27,32 @@ except:
 
 __all__ = ['mcmc',]
 
+class Logger:
+    """
+    Result logging class. Opens a file, writes some header and then
+    provides a method to write data vectors to it. The basic data line
+    is a walker plus a bunch of extras.
+    """
+    def __init__(self, lname, model, nwalker, nstore, dfile, soft):
+        self.fptr = open(lname,'w')
+        self.fptr.write(f'# nwalker = {nwalker}\n')
+        self.fptr.write(f'# nstore = {nstore}\n')
+        self.fptr.write(f'# dfile = {dfile}\n')
+        self.fptr.write(f'# soft = {soft}\n')
+        self.fptr.write(f'#\n')
+        model.write(self.fptr,'# ')
+        self.fptr.write("# Column names:\n")
+
+        # column names
+        cnames = model.vnames + ['lnpost','lnprior','chisq']
+        self.fptr.write(f"{' '.join(cnames)}\n")
+
+    def add_line(self, values, fmt='.10e'):
+        for val in values:
+            self.fptr.write(f'{val:{fmt}} ')
+        self.fptr.write('\n')
+        self.fptr.flush()
+
 class Lnpost(object):
     """Function object that returns ln(post prob) for emcee given a vector of
     variable parameters"""
@@ -30,28 +60,28 @@ class Lnpost(object):
     def __init__(self, model, t, te, f, fe, w, nd, soft):
         """Parameters::
 
-           model : (seclipse.model.Model)
+           model : seclipse.model.Model
               object representing a model
 
-           t     : (array)
+           t : array
               times
 
-           te    : (array)
+           te : array
               exposure times
 
-           f     : (array)
+           f : array
               fluxes
 
-           fe    : (array)
+           fe : array
               errors on fluxes
 
-           w     : (array)
+           w : array
               weights
 
-           nd    : (array)
+           nd : array
               sub-division factors
 
-           soft  : (float)
+           soft : float
               softening factor used to downweight chi**2, equivalent to
               scaling up errors by sqrt(soft).
 
@@ -67,45 +97,37 @@ class Lnpost(object):
 
     def __call__(self, p):
         """
-        Computes weighted chi**2 corresponding to set of variable
-        parameters specified in p which must as same order as
-        returned by self.m.cvars
+        Returns ln(posterior), ln(prior), chisq
         """
 
         # update the model using the current parameters
         self.m.update(p)
 
         if self.m.adjust() and self.m.ok():
-            prior = self.m.prior()
-            if prior < 1.e20:
+            lnprior = self.m.prior()
 
-                # weighted chi**2
-                chisq = self.m.chisq(
-                    self.t,self.te,self.f,self.fe,self.w,self.nd,
-                )
-
-                lpost = (chisq/self.soft+prior)/2.
-                return -lpost
-            else:
-                return -1.e30
+            # weighted chi**2
+            chisq = self.m.chisq(
+                self.t,self.te,self.f,self.fe,self.w,self.nd,
+            )
+            lnpost = lnprior - chisq/self.soft/2.
+            return lnpost, lnprior, chisq
         else:
-            # fail parameter check, can return quickly with a value that will
-            # never be selected
-            return -1.e30
+            return -np.inf, -np.inf, np.inf
 
 def mcmc(args=None):
 
-    """``mcmc log (model nthreads nstore nwalker) data ntrial
-    (soft stretch) soft output''
+    """``mcmc model data nwalker nstore ntrial nthreads soft stretch log best''
 
-    Carries out MCMC iterations of multi-star light curve model.
+    Carries out MCMC iterations of multi-sphere light curve model.
 
-    This will import a file called "Prior.py" if it exists in the directory
-    within which this is run. This should override the definition of the
-    "prior" method of the seclipse.model.Model object used to define the
-    triple / quadruple model using the derived class "Dmodel". e.g. The
-    following code tacks on a constraint on the parameter 'a2' onto to
-    whatever are already applied by the default "prior"::
+    This will import a file called "Prior.py" if it exists in the
+    directory within which this is run. This should override the
+    definition of the "prior" method of the seclipse.model.Model
+    object used to define the triple / quadruple model using the
+    derived class "Dmodel". e.g. The following code tacks on a
+    constraint on the parameter 'a2' onto to whatever are already
+    applied by the default "prior"::
 
     class Dmodel(Model):
         def prior(self):
@@ -118,231 +140,178 @@ def mcmc(args=None):
 
     Arguments::
 
-       log : string
-          log file to store results (can be old)
-
-       model : string
+       model : str
           if log is new, need to start with a model
 
-       nthreads : int
-          number of threads to run in parallel
-
-       nstore : int
-          how often to store results
+       data : str
+          data file name
 
        nwalker : int
           how many walkers per group
 
-       data : string
-          data file name
+       nstore : int
+          how often to store results
 
        ntrial : int
           total number of groups (only 1 in nstore of will be stored)
 
-       sfac : float
-          scaling factor to apply to initial jump distribution. Much less
-          than 1 usually.
-
-       stretch : float
-          emcee stretch factor
+       nthreads : int
+          number of threads to run in parallel
 
        soft : float
           softening factor to divide into chi**2
 
-       output : string
+       stretch : float
+          emcee stretch factor
+
+       log : str
+          log file to store results (can be old)
+
+       best : str
           file to save best model encountered to.
     """
 
+    # First section is all about the input parameters, defining
+    # then and getting their values.
+    
+    command, args = cline.script_args(args)
 
-    # generate arguments
-    if args is None:
-        args = sys.argv.copy()
+    with cline.Cline('SECLIPSE_ENV', '.seclipse', command, args) as cl:
 
-    # generate arguments
-    inpt = inp.Input('PYTHON_TRIPLE_ENV', '.pytriple', sys.argv)
+        # register parameters
+        cl.register('model', Cline.LOCAL, Cline.PROMPT)
+        cl.register('data', Cline.LOCAL, Cline.PROMPT)
+        cl.register('nwalker', Cline.LOCAL, Cline.PROMPT)
+        cl.register('nstore', Cline.LOCAL, Cline.PROMPT)
+        cl.register('ntrial', Cline.LOCAL, Cline.PROMPT)
+        cl.register('nthreads', Cline.LOCAL, Cline.PROMPT)
+        cl.register('soft', Cline.LOCAL, Cline.PROMPT)
+        cl.register('stretch', Cline.LOCAL, Cline.PROMPT)
+        cl.register('log', Cline.LOCAL, Cline.PROMPT)
+        cl.register('best', Cline.LOCAL, Cline.PROMPT)
 
-    # register parameters
-    inpt.register('log', inp.Input.LOCAL, inp.Input.PROMPT)
-    inpt.register('model', inp.Input.LOCAL, inp.Input.PROMPT)
-    inpt.register('nthreads', inp.Input.LOCAL, inp.Input.PROMPT)
-    inpt.register('nstore', inp.Input.LOCAL, inp.Input.PROMPT)
-    inpt.register('nwalker', inp.Input.LOCAL, inp.Input.PROMPT)
-    inpt.register('data', inp.Input.LOCAL, inp.Input.PROMPT)
-    inpt.register('ntrial', inp.Input.LOCAL, inp.Input.PROMPT)
-    inpt.register('sfac', inp.Input.LOCAL, inp.Input.PROMPT)
-    inpt.register('stretch', inp.Input.LOCAL, inp.Input.PROMPT)
-    inpt.register('soft', inp.Input.LOCAL, inp.Input.PROMPT)
-    inpt.register('output', inp.Input.LOCAL, inp.Input.PROMPT)
-
-    # get them
-    log = inpt.get_value(
-        'log', 'MCMC log file',
-        subs.Fname('lc', '.log', exist=False)
-    )
-
-    if os.path.exists(log):
-        # if a log file exists, read it in to find some of the parameters
-        chain = MCMC.Chain(log)
-
-        nwalker = chain.nwalker
-        if len(chain) < nwalker:
-            print('Too few walkers in',log,'; please delete and re-start.')
-            exit(1)
-        nstore = chain.nstore
-        stretch = chain.stretch
-
-        model = Dmodel(chain.model)
-        if not model.ok():
-            print('Initial model fails parameter check in ok(); please fix')
-            exit(1)
-
-        walkers = []
-        for i in range(nwalker):
-            walkers.append(chain.vals[-1-i,:-3])
-        append = True
-
-    else:
-        mod = inpt.get_value(
-            'model', 'light curve model', subs.Fname('lc', '.mod')
+        # get them
+        mod = cl.get_value(
+            'model', 'light curve model', cline.Fname('lc', '.mod')
         )
-
         model = Dmodel(mod)
         if not model.ok():
             print('Initial model fails parameter check in ok(); please fix')
             exit(1)
 
-        nstore = inpt.get_value('nstore', 'how often to store results', 1, 1)
-        nwalker = inpt.get_value('nwalker', 'number of walkers', 100, 10)
-        sfac = inpt.get_value('sfac', 'scaling factor to apply to initial scatter',
-                              0.1, 1.e-4)
-        stretch = inpt.get_value('stretch', 'stretch factor for emcee',
-                                 2, 1.1)
-        append = False
+        data = cl.get_value(
+            'data', 'light curve data', cline.Fname('lc', '.dat')
+        )
+        t,te,f,fe,w,nd = seclipse.model.load_data(data)
 
-    # Load data
-    dat = inpt.get_value('data', 'light curve data', subs.Fname('lc', '.dat'))
-    t,te,f,fe,w,nd = seclipse.model.load_data(dat)
+        nwalker = cl.get_value('nwalker', 'number of walkers', 100, 10)
+        nstore = cl.get_value('nstore', 'how often to store results', 1, 1)
+        ntrial = cl.get_value('ntrial', 'number of trials', 10000, 1)
+        nthreads = cl.get_value('nthreads', 'number of threads', 1, 1)
+        soft = cl.get_value(
+            'soft', 'softening factor to scale chi**2 down', 1., 1.e-20
+        )
+        stretch = cl.get_value('stretch', 'stretch factor for emcee', 2.0, 1.1)
 
-    # Remaining parameters
-    nthreads = inpt.get_value('nthreads', 'number of threads', 1, 1)
-    ntrial = inpt.get_value('ntrial', 'number of trials', 10000, 1)
-    soft = inpt.get_value('soft', 'softening factor to scale chi**2 down',
-                          1., 1.e-20)
-    output = inpt.get_value('output', 'best light curve model',
-                            subs.Fname('save', '.mod', subs.Fname.NEW))
-    inpt.save()
+        log = cl.get_value(
+            'log', 'MCMC log file',
+            cline.Fname('lc', '.log', exist=False)
+        )
+
+        best = cl.get_value(
+            'best', 'best light curve model',
+            cline.Fname('save', '.mod', cline.Fname.NEW)
+        )
+
+    # OK, done with parameters.
 
     if default:
         print('Using default prior')
     else:
         print('Using prior defined in Prior.py')
         
-    if not append:
-        # In this case we need to generate nwalker models which we do by
-        # randomly perturbing around starting model We ensure the starting
-        # model is the first one and ensure that all models are initially
-        # viable. 'sfac' controls the amount of perturbation.
+    # Generate nwalker "walkers" to start emcee by randomly perturbing
+    # around the starting model. We ensure the starting model is the
+    # first one and that all models are initially viable, but give up
+    # if we can't do so after trying 10x nwalker models.
 
-        start, sigma = model.cvars()
-        sigma *= sfac
-        walkers = [start,]
-        n = 1
-        while n < nwalker:
-            p = np.random.normal(start,sigma)
-            model.update(p)
-            if model.adjust() and model.ok():
-                walkers.append(p)
-                n += 1
-                if n > 10*nwalker:
-                    print('Tried > 10x nwalker models but have still not found')
-                    print('nwalker =',nwalker,'good ones. Giving up. Sorry.')
-                    exit(1)
+    start, sigma = model.cvars()
+    walkers = [start,]
+    n = 1
+    while n < nwalker:
+        p = np.random.normal(start,sigma)
+        model.update(p)
+        if model.adjust() and model.ok():
+            walkers.append(p)
+            n += 1
+            if n > 10*nwalker:
+                print('Tried > 10x nwalker models but have still not found')
+                print('nwalker =',nwalker,'good ones. Giving up. Sorry.')
+                exit(1)
 
-    # Create Chisq function object
+    # Create ln(posterior) function object
     lnpost = Lnpost(model, t, te,f, fe, w, nd, soft)
-
-    # create sampler
-    sampler = emcee.EnsembleSampler(
-        nwalker, len(walkers[0]), lnpost, a=stretch, threads=nthreads
-    )
-
-    lnps = None
-    rs = None
+        
+    # Name & type the "blobs" (emcee terminology). Must match order
+    # returned by Lnpost.__call__ (after the lnpost value)
+    bdtype = [
+        ('lnprior', float), ('chisq', float),
+    ]
     lnpmax = -1.e30
+    
+    # Create log
+    logger = Logger(log, model, nwalker, nstore, data, soft)
 
-    # create an MCMC compatible output file for results (or add to an old one,
-    # assuming it is compatible)
-    if append:
-        oflag = 'a'
-    else:
-        oflag = 'w'
+    with Pool(nthreads) as pool:
 
-    with open(log,oflag) as fout:
-        if not append:
-            fout.write('## ' + ' '.join(model.vnames) + ' chisq lprior lpost\n')
-            fout.write('#\n')
-            fout.write('# Initial model:\n')
-            fout.write('#\n')
-            model.write(fout,'# ')
-            fout.write('#\n')
-            fout.write('# nstore  = ' + str(nstore) + '\n')
-            fout.write('# method  = a\n')
-            fout.write('# nwalker = ' + str(nwalker) + '\n')
-            fout.write('# stretch = ' + str(stretch) + '\n')
-            fout.write('# Minimum chi**2 = 1\n')
-            fout.write('#\n')
-            fout.write('# Jump start:\n')
-            fout.write('#\n')
-            fout.write('# RMS values:\n')
-            fout.write('#\n')
-            for vnam, sig in zip(model.vnames, sigma):
-                fout.write('# ' + vnam + ' = ' + str(sig) + '\n')
-            fout.write('#\n')
-            fout.write('# Jump end:\n')
-            fout.write('#\n')
+        # create the sampler
+        sampler = emcee.EnsembleSampler(
+            nwalker, len(walkers[0]), lnpost, pool,
+            emcee.moves.StretchMove(stretch),
+            blobs_dtype=bdtype
+        )
 
-        # let the trials begin
-        for i in range(ntrial // nstore):
+        nstep = 0
+        for sample in sampler.sample(walkers, iterations=ntrial//nstore, thin_by=nstore):
+            nstep += 1
+            print(f'Group {nstep}, acceptance rate = {sampler.acceptance_fraction.mean()}')
 
-            walkers, lnps, rs = sampler.run_mcmc(walkers, nstore, rs, lnps)
-
-            print('Group',i+1,'acceptance rate =',sampler.acceptance_fraction.mean())
+            # extract all the values we want.
+            lnps = sampler.get_log_prob()[-1]
+            blobs = sampler.get_blobs()[-1]
+            results = sampler.get_chain()[-1]
 
             # check to see if we have improved the model
             if lnps.max() > lnpmax:
+                imax = lnps.argmax()
                 lnpmax = lnps.max()
-                best = walkers[np.argmax(lnps)]
-                model.update(best)
-                model.adjust()
-                lnpri = model.prior()
-                chisq = -soft*(2*lnpmax+lnpri)
-                print('New best model. -2*ln(pprob),-2*ln(pri),chisq =',\
-                          -2*lnpmax,lnpri,chisq)
 
-                for name, value in zip(model.vnames, best):
-                    print('{0:20s} = {1:s}'.format(name, str(value)))
+                # Crow about it
+                print(f"New best model has ln(post) = {lnpmax}, chisq = {blobs['chisq'][imax]}")
+
+                # Save the wonderful model to disk
+                bres = results[imax]
+                model.update(bres)
+                model.adjust()
 
                 # write to output file
-                with open(output,'w') as fsave:
-                    fsave.write(
-"""#
+                with open(best,'w') as fsave:
+                    fsave.write(f"""#
 # File generated by mcmc.py
 #
-# Softening factor = {0:4.4g}
+# Softening factor = {soft}
 #
-# chi**2 = {1:7.7g}, -2*ln(pri) = {2:7.7g}, -2*ln(post) = {3:7.7g}
+# ln(post)  = {lnpmax}
+# ln(prior) = {blobs['lnprior'][imax]}
+# chi**2    = {blobs['chisq'][imax]}
 #
-""".format(soft,chisq,lnpri,2*lnpmax))
+""")
                     model.write(fsave)
 
-            sampler.reset()
+            sys.stdout.flush()
 
-            # write out results
-            for lnp, walker in zip(lnps, walkers):
-                model.update(walker)
-                lnpri = model.prior()
-                chisq = -soft*(2*lnp+lnpri)
-                strs  = ['{0:17.10e}'.format(item) for item in walker]
-                fout.write(' '.join(strs) + ' {0:13.6e} {1:13.6e} {2:13.6e}\n'.format(chisq,lnpri,-lnp))
-            fout.flush()
-
+            # Write the current walkers to a file, one line per walker
+            for walker, lnp, lnprior, chisq in \
+                zip(results, lnps, blobs["lnprior"], blobs["chisq"]):
+                logger.add_line(np.concatenate((walker, [lnp, lnprior, chisq])))
+                
