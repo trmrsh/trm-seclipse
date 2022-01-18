@@ -125,7 +125,7 @@ def mcmc(args=None):
     directory within which this is run. This should override the
     definition of the "prior" method of the seclipse.model.Model
     object used to define the triple / quadruple model using the
-    derived class "Dmodel". e.g. The following code tacks on a
+    derived class "Dmodel". e.g. the following code tacks on a
     constraint on the parameter 'a2' onto to whatever are already
     applied by the default "prior"::
 
@@ -171,9 +171,9 @@ def mcmc(args=None):
           file to save best model encountered to.
     """
 
-    # First section is all about the input parameters, defining
-    # then and getting their values.
-    
+    # First section is all about the input parameters, defining then
+    # and getting their values.
+
     command, args = cline.script_args(args)
 
     with cline.Cline('SECLIPSE_ENV', '.seclipse', command, args) as cl:
@@ -229,7 +229,7 @@ def mcmc(args=None):
         print('Using default prior')
     else:
         print('Using prior defined in Prior.py')
-        
+
     # Generate nwalker "walkers" to start emcee by randomly perturbing
     # around the starting model. We ensure the starting model is the
     # first one and that all models are initially viable, but give up
@@ -251,14 +251,14 @@ def mcmc(args=None):
 
     # Create ln(posterior) function object
     lnpost = Lnpost(model, t, te,f, fe, w, nd, soft)
-        
+
     # Name & type the "blobs" (emcee terminology). Must match order
     # returned by Lnpost.__call__ (after the lnpost value)
     bdtype = [
         ('lnprior', float), ('chisq', float),
     ]
     lnpmax = -1.e30
-    
+
     # Create log
     logger = Logger(log, model, nwalker, nstore, data, soft)
 
