@@ -11,7 +11,7 @@ from multiprocessing import Pool
 import emcee
 
 # mine
-from trm import cline, seclipse
+from trm import cline, seclipse, pmcmc
 from trm.cline import Cline
 
 try:
@@ -117,7 +117,7 @@ class Lnpost(object):
 
 def mcmc(args=None):
 
-    """``mcmc model data nwalker nstore ntrial nthreads soft stretch sfac log best''
+    """``mcmc model data olog (nwalker) nstore ntrial nthreads soft stretch sfac log best''
 
     Carries out MCMC iterations of multi-sphere light curve model.
 
@@ -146,7 +146,11 @@ def mcmc(args=None):
        data : str
           data file name
 
-       nwalker : int
+       olog : str
+          old log file to initialise walkers. This will also define
+          the number of walkers. "none" to ignore.
+
+       nwalker : int [if olog == 'none']
           how many walkers per group
 
        nstore : int
@@ -186,6 +190,7 @@ def mcmc(args=None):
         # register parameters
         cl.register('model', Cline.LOCAL, Cline.PROMPT)
         cl.register('data', Cline.LOCAL, Cline.PROMPT)
+        cl.register('olog', Cline.LOCAL, Cline.PROMPT)
         cl.register('nwalker', Cline.LOCAL, Cline.PROMPT)
         cl.register('nstore', Cline.LOCAL, Cline.PROMPT)
         cl.register('ntrial', Cline.LOCAL, Cline.PROMPT)
@@ -204,13 +209,18 @@ def mcmc(args=None):
         if not model.ok():
             print('Initial model fails parameter check in ok(); please fix')
             exit(1)
-
         data = cl.get_value(
             'data', 'light curve data', cline.Fname('lc', '.dat')
         )
         t,te,f,fe,w,nd = seclipse.model.load_data(data)
 
-        nwalker = cl.get_value('nwalker', 'number of walkers', 100, 10)
+        olog = cl.get_value(
+            'olog',
+            "old log file to initialise walkers ['none' to ignore]",
+            cline.Fname('lc', '.log'), ignore='none'
+        )
+        if olog is None:
+            nwalker = cl.get_value('nwalker', 'number of walkers', 100, 10)
         nstore = cl.get_value('nstore', 'how often to store results', 1, 1)
         ntrial = cl.get_value('ntrial', 'number of trials', 10000, 1)
         nthreads = cl.get_value('nthreads', 'number of threads', 1, 1)
@@ -242,27 +252,32 @@ def mcmc(args=None):
     # Create ln(posterior) function object
     lnpost = Lnpost(model, t, te,f, fe, w, nd, soft)
 
-    # Generate nwalker "walkers" to start emcee by randomly perturbing
-    # around the starting model. We ensure the starting model is the
-    # first one and that all models are initially viable, but give up
-    # if we can't do so after trying 10x nwalker models.
+    if olog is None:
+        # Generate nwalker "walkers" to start emcee by randomly perturbing
+        # around the starting model. We ensure the starting model is the
+        # first one and that all models are initially viable, but give up
+        # if we can't do so after trying 10x nwalker models.
+        start, sigma = model.cvars()
 
-    start, sigma = model.cvars()
+        walkers = [start,]
+        n = 1
+        while len(walkers) < nwalker:
+            p = np.random.normal(start,sfac*sigma)
+            model.update(p)
+            if model.adjust() and model.ok():
+                walkers.append(p)
 
-    walkers = [start,]
-    n = 1
-    while len(walkers) < nwalker:
-        p = np.random.normal(start,sfac*sigma)
-        model.update(p)
-        if model.adjust() and model.ok():
-            walkers.append(p)
-
-        n += 1
-        if n > 10*nwalker:
-            print(f'Tried {n} models but have only found {len(walkers)}')
-            print('good ones. Giving up.')
-            exit(1)
-
+            n += 1
+            if n > 10*nwalker:
+                print(f'Tried {n} models but have only found {len(walkers)}')
+                print('good ones. Giving up.')
+                exit(1)
+    else:
+        # get walkers from old file
+        ol = pmcmc.Log(olog)
+        nwalker = ol.nwalker
+        walkers = np.array(ol.data[-nwalker:,:-3])
+        
     # Name & type the "blobs" (emcee terminology). Must match order
     # returned by Lnpost.__call__ (after the lnpost value)
     bdtype = [
