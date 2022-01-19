@@ -117,7 +117,7 @@ class Lnpost(object):
 
 def mcmc(args=None):
 
-    """``mcmc model data olog (nwalker) nstore ntrial nthreads soft stretch sfac log best''
+    """``mcmc model data olog (nwalker sfac) nstore ntrial nthreads soft stretch log best''
 
     Carries out MCMC iterations of multi-sphere light curve model.
 
@@ -151,7 +151,15 @@ def mcmc(args=None):
           the number of walkers. "none" to ignore.
 
        nwalker : int [if olog == 'none']
-          how many walkers per group
+          how many walkers per group. In this case, walkers are
+          initialised by perturbing the starter model. It should
+          be at least 2*(number variable parameters) to keep emcee
+          happy.
+
+       sfac : float [if olog == 'none']
+          factor to scale perturbations by at start when initialising. If
+          small, it avoids models wandering too far from where they can
+          never be recovered.
 
        nstore : int
           how often to store results
@@ -167,11 +175,6 @@ def mcmc(args=None):
 
        stretch : float
           emcee stretch factor
-
-       sfac : float
-          factor to scale perturbations at start when initialising. If
-          small, avoids models wandering too far from where they can
-          never be recovered.
 
        log : str
           log file to store results (can be old)
@@ -192,12 +195,12 @@ def mcmc(args=None):
         cl.register('data', Cline.LOCAL, Cline.PROMPT)
         cl.register('olog', Cline.LOCAL, Cline.PROMPT)
         cl.register('nwalker', Cline.LOCAL, Cline.PROMPT)
+        cl.register('sfac', Cline.LOCAL, Cline.PROMPT)
         cl.register('nstore', Cline.LOCAL, Cline.PROMPT)
         cl.register('ntrial', Cline.LOCAL, Cline.PROMPT)
         cl.register('nthreads', Cline.LOCAL, Cline.PROMPT)
         cl.register('soft', Cline.LOCAL, Cline.PROMPT)
         cl.register('stretch', Cline.LOCAL, Cline.PROMPT)
-        cl.register('sfac', Cline.LOCAL, Cline.PROMPT)
         cl.register('log', Cline.LOCAL, Cline.PROMPT)
         cl.register('best', Cline.LOCAL, Cline.PROMPT)
 
@@ -221,6 +224,9 @@ def mcmc(args=None):
         )
         if olog is None:
             nwalker = cl.get_value('nwalker', 'number of walkers', 100, 10)
+            sfac = cl.get_value(
+                'sfac', 'scaling factor for initialising walkers', 0.01, 1e-10
+            )
         nstore = cl.get_value('nstore', 'how often to store results', 1, 1)
         ntrial = cl.get_value('ntrial', 'number of trials', 10000, 1)
         nthreads = cl.get_value('nthreads', 'number of threads', 1, 1)
@@ -228,9 +234,6 @@ def mcmc(args=None):
             'soft', 'softening factor to scale chi**2 down', 1., 1.e-20
         )
         stretch = cl.get_value('stretch', 'stretch factor for emcee', 2.0, 1.1)
-        sfac = cl.get_value(
-            'sfac', 'scaling factor for initialising walkers', 0.01, 1e-10
-        )
 
         log = cl.get_value(
             'log', 'MCMC log file',
@@ -276,7 +279,11 @@ def mcmc(args=None):
         # get walkers from old file
         ol = pmcmc.Log(olog)
         nwalker = ol.nwalker
-        walkers = np.array(ol.data[-nwalker:,:-3])
+        tab = ol.data[-nwalker:]
+        cnames = tab.colnames[:-3]
+        walkers = np.empty((nwalker,len(cnames)),dtype=np.float64)
+        for n, cname in enumerate(cnames):
+            walkers[:,n] = tab[cname].astype(np.float64)
         
     # Name & type the "blobs" (emcee terminology). Must match order
     # returned by Lnpost.__call__ (after the lnpost value)
