@@ -6,6 +6,7 @@ import os
 import math as m
 import numpy as np
 from multiprocessing import Pool
+import importlib
 
 # third party 
 import emcee
@@ -14,16 +15,70 @@ import emcee
 from trm import cline, seclipse, pmcmc
 from trm.cline import Cline
 
-try:
-    # Import Dmodel defined in Prior.py in directory
-    # we are working from.
-    sys.path.insert(0,'.')
-    from Prior import Dmodel
-    default = False
-except:
-    class Dmodel(seclipse.model.Model):
-        pass
-    default = True
+class Dmodel(seclipse.model.Model):
+    """
+    Class derived from seclipse.model.Model to define
+    a model.
+    """
+
+    def __init__(self, arg, model_ok=None, model_adjust=None, model_ranges=None):
+
+        super().__init__(arg)
+
+        self.model_ok = model_ok
+        self.model_adjust = model_adjust
+
+        if model_ranges is not None:
+            assert len(model_ranges) >= len(self.vnames), \
+                f'Too few parameter ranges specified ({len(model_ranges)})' + \
+                f' cf number of variables ({len(self.vnames)})'
+
+            # store lower/upper parameter limits
+            self.plos = np.empty(len(self.vnames))
+            self.phis = np.empty(len(self.vnames))
+            for n, vname in enumerate(self.vnames):
+                plo,phi = model_ranges[vname]
+                self.plos[n] = plo
+                self.phis[n] = phi
+        else:
+            self.plos = None
+
+    def ok(self, verbose=False):
+        """
+        Checks are added to checks from Model
+        """
+        if super().ok():
+
+            # first parameter range checks
+            if self.plos is not None:
+                for n, vname in enumerate(self.vnames):
+                    pvalue = self[vname][0]
+                    if pvalue < self.plos[n] or pvalue > self.phis[n]:
+                        if verbose:
+                            print(f'"{vname}" out of range: {self.plos[n]} to {self.phis[n]}')
+                        return False
+
+            # any additional checks
+            if self.model_ok is not None and \
+               not self.model_ok(self):
+                if verbose:
+                    print(f'model failed additional tests')
+                return False
+            return True
+        else:
+            if verbose:
+                print('failed standard model check')
+            return False
+
+    def adjust(self):
+        if super().adjust():
+            if self.model_adjust is not None and \
+               not self.model_adjust(self):
+                return False
+            else:
+                return True
+        else:
+            return False
 
 __all__ = ['mcmc',]
 
@@ -117,31 +172,30 @@ class Lnpost(object):
 
 def mcmc(args=None):
 
-    """``mcmc model data olog (nwalker sfac) nstore ntrial nthreads soft stretch log best''
+    """``mcmc model code data olog (nwalker sfac) nstore ntrial nthreads
+    soft stretch log best''
 
     Carries out MCMC iterations of multi-sphere light curve model.
 
-    This will import a file called "Prior.py" if it exists in the
-    directory within which this is run. This should override the
-    definition of the "prior" method of the seclipse.model.Model
-    object used to define the triple / quadruple model using the
-    derived class "Dmodel". e.g. the following code tacks on a
-    constraint on the parameter 'a2' onto to whatever are already
-    applied by the default "prior"::
-
-    class Dmodel(Model):
-        def prior(self):
-            pri = super(Dmodel, self).prior()
-            if self['a2'][0] > 3.:
-                pri += ((self['a2'][0]-3.)/0.05)**2
-            return pri
-
-    This is imported if available.
+    This can (optionally) import a user-defined file which should
+    include two methods, "model_ok" and "model_adjust", and a
+    dictionary "model_ranges. "model_ok" and "model_adjust" both take
+    an seclipse.model.Model as their only input and both return True
+    or False depending on whether they run OK. "model_ok" checks that
+    the input model is valid; "model_adjust" alters fixed parameters
+    according to the variable parameters, e.g. to implement Kepler's
+    laws. "model_ranges" looks like {'r1' : (0.1, 0.5), 'r2' : (0.5,
+    1.5)} i.e. it's a dictionary specifying upper and lower limits for
+    each variable parameter for the model in question. 
 
     Arguments::
 
        model : str
           if log is new, need to start with a model
+
+       code : str
+          file of code as explained above (model_ok etc). 'none'
+          to ignore.
 
        data : str
           data file name
@@ -181,6 +235,7 @@ def mcmc(args=None):
 
        best : str
           file to save best model encountered to.
+
     """
 
     # First section is all about the input parameters, defining then
@@ -192,6 +247,7 @@ def mcmc(args=None):
 
         # register parameters
         cl.register('model', Cline.LOCAL, Cline.PROMPT)
+        cl.register('code', Cline.LOCAL, Cline.PROMPT)
         cl.register('data', Cline.LOCAL, Cline.PROMPT)
         cl.register('olog', Cline.LOCAL, Cline.PROMPT)
         cl.register('nwalker', Cline.LOCAL, Cline.PROMPT)
@@ -208,14 +264,32 @@ def mcmc(args=None):
         mod = cl.get_value(
             'model', 'light curve model', cline.Fname('lc', '.mod')
         )
-        model = Dmodel(mod)
-        if not model.ok():
-            print('Initial model fails parameter check in ok(); please fix')
+        code = cl.get_value(
+            'code',
+            "python code to control model ['none' to ignore]",
+            cline.Fname('code', '.py'), ignore='none'
+        )[:-3]
+
+        # Construct the model
+        if code is None:
+            # default
+            model = Dmodel(mod)
+        else:
+            sys.path.append(".")
+            code = importlib.import_module(code)
+            model = Dmodel(
+                mod, code.model_ok, code.model_adjust, code.model_ranges
+            )
+
+        if not model.adjust() or not model.ok(True):
+            print('Initial model fails parameter checks; please fix')
             exit(1)
+
         data = cl.get_value(
             'data', 'light curve data', cline.Fname('lc', '.dat')
         )
         t,te,f,fe,w,nd = seclipse.model.load_data(data)
+
 
         olog = cl.get_value(
             'olog',
@@ -246,11 +320,6 @@ def mcmc(args=None):
         )
 
     # OK, done with parameters.
-
-    if default:
-        print('Using default prior')
-    else:
-        print('Using prior defined in Prior.py')
 
     # Create ln(posterior) function object
     lnpost = Lnpost(model, t, te,f, fe, w, nd, soft)
