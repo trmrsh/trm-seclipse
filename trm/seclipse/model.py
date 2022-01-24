@@ -64,27 +64,36 @@ def calc_sfac(fit, fs, fes, ws=None):
 class Model(dict):
 
     """Represents a stellar system, either a triple or quadruple star,
-    modelled as a set of limb-darkened spheres in hierarchical Keplerian
-    orbits.
+    modelled as a set of limb-darkened spheres in hierarchical
+    Keplerian orbits.
 
-    Four configurations are supported, representing a triple and a quadruple
-    star. Which is used is determined using the parameter 'model' in the input
-    data file used to define the model, which can one of the following values
-    'triple', 'quad2', 'tdisc', 'special'. Here are the definitions of these
-    models:
+    Attributes::
+
+        pnames : list
+           names of parameters.
+
+        vnames : list
+           names of variable parameters.
+
+    Four configurations are supported, representing a triple and a
+    quadruple star. Which is used is determined using the parameter
+    'model' in the input data file used to define the model, which can
+    one of the following values 'triple', 'quad2', 'tdisc',
+    'special'. Here are the definitions of these models:
 
 
     1) Name = 'triple'
 
-    Defines a light curve model for a triple star built up with a hierarchy of
-    Kepler 2-body orbits (an approximation). Stars 1 & 2 form the first inner
-    binary (1 / 2, binary 1), while stars (1+2) and star 2 forms the second
-    outer binary ((1+2) / 3, binary 2).
+    Defines a light curve model for a triple star built up with a
+    hierarchy of Kepler 2-body orbits (an approximation). Stars 1 & 2
+    form the first inner binary (1 / 2, binary 1), while stars (1+2)
+    and star 2 forms the second outer binary ((1+2) / 3, binary 2).
 
-    Thus there are two orbits to define as will be obvious below. Mostly this
-    will be obvious through b1 = binary 1 etc, except for the semi-major axes
-    where I think it is more memorable to try to use values that are
-    associated with the stars where possible.
+    Thus there are two orbits to define as will be obvious
+    below. Mostly this will be obvious through b1 = binary 1 etc,
+    except for the semi-major axes where I think it is more memorable
+    to try to use values that are associated with the stars where
+    possible.
 
     Triple parameters::
 
@@ -183,18 +192,20 @@ class Model(dict):
 
     2) Name = 'quad2' representing a quadruple star.
 
-    Defines a light curve model for a quadruple star built up with a hierarchy
-    of Kepler 2-body orbits (an approximation). Stars 1 & 2 form the first,
-    innermost, binary (1 / 2, binary 1), Stars (1+2) and star 4 forms the
-    second, middle binary ((1+2) / 4, binary 2). Finally stars (1+2)+4 and
-    star 3 forms the third outermost binary ((1+2)+4) / 3, binary 3). (The name
-    'quad2' is used as there are two possible configurations of quadruples and
-    'quad1' is reserved for the more obvious binary of two tight binaries.)
+    Defines a light curve model for a quadruple star built up with a
+    hierarchy of Kepler 2-body orbits (an approximation). Stars 1 & 2
+    form the first, innermost, binary (1 / 2, binary 1), Stars (1+2)
+    and star 4 forms the second, middle binary ((1+2) / 4, binary
+    2). Finally stars (1+2)+4 and star 3 forms the third outermost
+    binary ((1+2)+4) / 3, binary 3). (The name 'quad2' is used as
+    there are two possible configurations of quadruples and 'quad1' is
+    reserved for the more obvious binary of two tight binaries.)
 
-    Thus there are three orbits to define as will be obvious below. Mostly
-    this will be obvious through b1 = binary 1 etc, except for the semi-major
-    axes where I think it is more memorable to try to use values that are
-    associated with the stars where possible.
+    Thus there are three orbits to define as will be obvious
+    below. Mostly this will be obvious through b1 = binary 1 etc,
+    except for the semi-major axes where I think it is more memorable
+    to try to use values that are associated with the stars where
+    possible.
 
     Quad2 parameters::
 
@@ -780,51 +791,51 @@ class Model(dict):
              'ttype' : (0, 1, 2),
              },
 
-        'quad2' :
-            {'r1' : (0.02, 1.e-4, 20.),
-             'r2' : (0.02, 1.e-4, 20.),
-             'r3' : (0.02, 1.e-4, 20.),
-             'r4' : (0.02, 1.e-4, 20.),
-             'a1' : (0.01, 0., 400.),
-             'a2' : (0.01, 0., 400.),
-             'a3' : (0.2,  0., 400.),
-             'a4' : (0.2,  0., 400.),
-             'ab1' : (0.2,  0., 400.),
-             'ab2' : (0.2,  0., 400.),
-             'eb1' : (0.01, 0., 0.999999),
-             'eb2' : (0.01, 0., 0.999999),
-             'eb3' : (0.01, 0., 0.999999),
-             'omegab1' : (1, 0., 360.),
-             'omegab2' : (1, 0., 360.),
-             'omegab3' : (1, 0., 360.),
-             'Pb1' : (1.e-5, 0.2585, 0.2586),
-             'Pb2' : (1.e-3, 0.3, 50.),
-             'Pb3' : (1.e-2, 200., 210.),
-             'ib1' : (0.1, 85., 90.),
-             'ib2' : (0.1, 85., 90.),
-             'ib3' : (0.1, 75., 90.),
-             'OMEGAb1' : (1, 170., 190.),
-             'OMEGAb2' : (1, 170., 190.),
-             'OMEGAb3' : (1, 170., 190.),
-             't0b1' : (0.01, 0.,1000.),
-             't0b2' : (0.02, 0.,1000.),
-             't0b3' : (0.1, 0.,1000.),
-             's1' : (1., 0., 5000.),
-             's2' : (1., 0., 5000.),
-             's3' : (1., 0., 5000.),
-             's4' : (1., 0., 5000.),
-             'third' : (0.05, 0., 1.),
-             'limb1' : (0.01, 0., 1.),
-             'limb2' : (0.01, 0., 1.),
-             'limb3' : (0.01, 0., 1.),
-             'limb4' : (0.01, 0., 1.),
-             'n1' : (0, 2, 1000),
-             'n2' : (0, 2, 1000),
-             'n3' : (0, 2, 1000),
-             'n4' : (0, 2, 1000),
-             'ttype' : (0, 1, 2),
-             },
-
+        'quad2' : {
+            'r1' : (0.02, 1.e-4, 5.),
+            'r2' : (0.02, 1.e-4, 5.),
+            'r3' : (0.02, 1.e-4, 5.),
+            'r4' : (0.02, 1.e-4, 5.),
+            'a1' : (0.01, 1.e-4, 4.),
+            'a2' : (0.01, 1.e-4, 4.),
+            'a3' : (0.2,  1.e-4, 200.),
+            'a4' : (0.2,  1.e-4, 100.),
+            'ab1' : (0.2,  1.e-4, 100.),
+            'ab2' : (0.2,  1.e-4, 100.),
+            'eb1' : (0.01, 0., 0.999999),
+            'eb2' : (0.01, 0., 0.999999),
+            'eb3' : (0.01, 0., 0.999999),
+            'omegab1' : (1, 0., 360.),
+            'omegab2' : (1, 0., 360.),
+            'omegab3' : (1, 0., 360.),
+            'Pb1' : (1.e-5, 0.2585, 0.2586),
+            'Pb2' : (1.e-3, 9.5, 11.),
+            'Pb3' : (1.e-2, 200., 210.),
+            'ib1' : (0.1, 70., 90.),
+            'ib2' : (0.1, 70., 95.),
+            'ib3' : (0.1, 80., 90.),
+            'OMEGAb1' : (1, 0., 360.),
+            'OMEGAb2' : (1, 0., 360.),
+            'OMEGAb3' : (1, 0., 360.),
+            't0b1' : (0.01, 1185.52,1185.62),
+            't0b2' : (0.02, 1170.,1200.),
+            't0b3' : (0.1, 1170,1200.),
+            's1' : (1., 0., 5000.),
+            's2' : (1., 0., 5000.),
+            's3' : (1., 0., 5000.),
+            's4' : (1., 0., 5000.),
+            'third' : (0.05, 0., 1.),
+            'limb1' : (0.01, 0., 1.),
+            'limb2' : (0.01, 0., 1.),
+            'limb3' : (0.01, 0., 1.),
+            'limb4' : (0.01, 0., 1.),
+            'n1' : (0, 2, 1000),
+            'n2' : (0, 2, 1000),
+            'n3' : (0, 2, 1000),
+            'n4' : (0, 2, 1000),
+            'ttype' : (0, 1, 2),
+        },
+              
         'tdisc' :
             {'r1' : (0.02, 1.e-4, 20.),
              'r2' : (0.02, 1.e-4, 20.),
@@ -1039,8 +1050,9 @@ class Model(dict):
         for pname in self.pnames:
             if pname not in Model.PARAMS[self.model]:
                 raise Exception(
-                    'Parameter = {:s} not recognised for model = {:s}'.format(pname, self.model)
-                    )
+                    f'Parameter = {pname} not recognised for'
+                    f' model = {self.model}'
+                )
 
     def paths(self, times):
         """
