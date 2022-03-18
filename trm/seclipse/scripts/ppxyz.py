@@ -8,15 +8,11 @@ import matplotlib.pyplot as plt
 import trm.subs.input as inp
 from trm import seclipse, orbits, cline
 
-def ppxz(args=None):
+def ppxyz(args=None):
 
-    """``ppxy model time1 time2 ntime``
+    """``ppxyz model time1 time2 ntime relative``
 
-    Script to plot paths of stars in x-z plane. x-z is close to the
-    orbital plane if the Omegas are close to 270 or 90. +z points
-    towards Earth so this plots -z so that the observer is best
-    thought of as being at the bottom of the screen which is a more
-    natural perspective.
+    Script to plot x,y,z paths of stars vs time.
 
     Arguments::
 
@@ -86,43 +82,80 @@ def ppxz(args=None):
         theta = np.linspace(0,2.*np.pi,200)
         xc, yc = np.cos(theta), np.sin(theta)
 
-    fig,ax = plt.subplots()
+    fig,(ax,ay,az) = plt.subplots(3,1,sharex=True)
 
-    # star 1
-    ax.set_aspect('equal')
     if relative:
+        x1s -= x3s
+        y1s -= y3s
+        z1s -= z3s
+        x2s -= x3s
+        y2s -= y3s
+        z2s -= z3s
         if model.model == 'tdisc':
             pass
         else:
-            ax.plot(r3*xc,r3*yc,'k',label='r3')
-            ax.plot((r3+r1)*xc,(r3+r1)*yc,'b--',label='r3+r1')
-            ax.plot((r3+r2)*xc,(r3+r2)*yc,'c--',label='r3+r2')
+            ax.axhline(r3+r1,ls='--',color='b',label='r3+r1')
+            ax.axhline(-r3-r1,ls='--',color='b')
+            ax.axhline(r3+r2,ls='--',color='c',label='r3+r2')
+            ax.axhline(-r3-r2,ls='--',color='c')
         ax.set_title('Star 1, 2 and 4 relative to 3')
     else:
         ax.set_title('Star 1, 3 and 4')
 
+    ax.axhline(0,ls='--',color='k')
+        
+    ax.plot(ts,x1s,'b',label='star 1')
+    ax.plot(ts,x2s,'c',label='star 2')
+
+    if not relative:
+        ax.plot(ts, x3s, 'g',label='star 3')
+
     if model.model == 'quad2':
         if relative:
             x4s -= x3s
+            y4s -= y3s
             z4s -= z3s
-        ax.plot(x4s,-z4s,'r',label='star 4')
+        ax.plot(ts, x4s,'r',label='star 4')
 
-    if relative:
-        x1s -= x3s
-        z1s -= z3s
-        x2s -= x3s
-        z2s -= z3s
-    else:
-        ax.plot(x3s,-z3s,'g',label='star 3')
-
-    if relative:
-        ax.axvline(0,ls='--',color='k')
-    else:
-        ax.plot(0,0,'+k')
-        
-    ax.plot(x1s,-z1s,'b',label='star 1')
-    ax.plot(x2s,-z2s,'c',label='star 2')
     ax.legend()
-    ax.set_xlabel('X [AU]')
-    ax.set_ylabel('-Z [AU]')
+    ax.set_ylabel('X [AU]')
+
+    # y
+    if relative:
+        if model.model == 'tdisc':
+            pass
+        else:
+            ay.axhline(r3+r1,ls='--',color='b',label='r3+r1')
+            ay.axhline(-r3-r1,ls='--',color='b')
+            ay.axhline(r3+r2,ls='--',color='c',label='r3+r2')
+            ay.axhline(-r3-r2,ls='--',color='c')
+
+    ay.axhline(0,ls='--',color='k')  
+    ay.plot(ts,y1s,'b',label='star 1')
+    ay.plot(ts,y2s,'c',label='star 2')
+
+    if not relative:
+        ay.plot(ts, y3s, 'g',label='star 3')
+
+    if model.model == 'quad2':
+        ay.plot(ts, y4s,'r',label='star 4')
+
+    ay.legend()
+    ay.set_ylabel('Y [AU]')
+
+    # z
+    az.axhline(0,ls='--',color='k')  
+    az.plot(ts,z1s,'b',label='star 1')
+    az.plot(ts,z2s,'c',label='star 2')
+
+    if not relative:
+        az.plot(ts, z3s, 'g',label='star 3')
+
+    if model.model == 'quad2':
+        az.plot(ts, z4s,'r',label='star 4')
+
+    az.legend()
+    az.set_xlabel('Time [days]')
+    az.set_ylabel('Z [AU]')
+    
     plt.show()

@@ -28,8 +28,9 @@ setup(name='trm.seclipse',
 #              'masses=trm.seclipse.scripts.masses:masses',
               'mcmc=trm.seclipse.scripts.mcmc:mcmc',
 #              'ppath=trm.seclipse.scripts.ppath:ppath',
-#              'ppxy=trm.seclipse.scripts.ppxy:ppxy',
-#              'ppxz=trm.seclipse.scripts.ppxz:ppxz',
+              'ppxy=trm.seclipse.scripts.ppxy:ppxy',
+              'ppxz=trm.seclipse.scripts.ppxz:ppxz',
+              'ppxyz=trm.seclipse.scripts.ppxyz:ppxyz',
           ]
       },
 
