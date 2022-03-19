@@ -76,11 +76,11 @@ def lcmodel(args=None):
         else:
 
             # create regularly spaced data
-            time1 = inpt.get_value('time1', 'start time', 0.)
-            time2 = inpt.get_value('time2', 'end time', 100.)
-            ntime = inpt.get_value('ntime', 'number of times', 2)
-            texp = inpt.get_value('texp', 'exposure time', 0.01, 0.)
-            ndiv = inpt.get_value('ndiv', 'sub-division factor to smear exposures', 1, 1)
+            time1 = cl.get_value('time1', 'start time', 0.)
+            time2 = cl.get_value('time2', 'end time', 100.)
+            ntime = cl.get_value('ntime', 'number of times', 2)
+            texp = cl.get_value('texp', 'exposure time', 0.01, 0.)
+            ndiv = cl.get_value('ndiv', 'sub-division factor to smear exposures', 1, 1)
 
     # inputs obtained. do something
 
@@ -101,7 +101,7 @@ def lcmodel(args=None):
             print('Weighted chisq =',chisq)
 
         # rather specific time offset applied
-        ts += 2454833 - 2400000 - 57240
+        #ts += 2454833 - 2400000 - 57240
 
         plt.plot(ts,fs,'.g')
         plt.plot(ts,fit,'r')
