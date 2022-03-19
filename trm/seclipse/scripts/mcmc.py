@@ -21,12 +21,17 @@ class Dmodel(seclipse.model.Model):
     a model.
     """
 
-    def __init__(self, arg, model_ok=None, model_adjust=None, model_ranges=None):
+    def __init__(
+            self, arg,
+            model_ok=None, model_adjust=None,
+            model_prior=None, model_ranges=None
+    ):
 
         super().__init__(arg)
 
         self.model_ok = model_ok
         self.model_adjust = model_adjust
+        self.model_prior = model_prior
 
         if model_ranges is not None:
             assert len(model_ranges) >= len(self.vnames), \
@@ -80,6 +85,12 @@ class Dmodel(seclipse.model.Model):
         else:
             return False
 
+    def prior(self):
+        if self.model_prior is not None:
+            return super().prior() + self.model_prior(self)
+        else:
+            return super().prior()
+
 __all__ = ['mcmc',]
 
 class Logger:
@@ -88,19 +99,22 @@ class Logger:
     provides a method to write data vectors to it. The basic data line
     is a walker plus a bunch of extras.
     """
-    def __init__(self, lname, model, nwalker, nstore, dfile, soft):
-        self.fptr = open(lname,'w')
-        self.fptr.write(f'# nwalker = {nwalker}\n')
-        self.fptr.write(f'# nstore = {nstore}\n')
-        self.fptr.write(f'# dfile = {dfile}\n')
-        self.fptr.write(f'# soft = {soft}\n')
-        self.fptr.write(f'#\n')
-        model.write(self.fptr,'# ')
-        self.fptr.write("# Column names:\n")
+    def __init__(self, lname, model, nwalker, nstore, dfile, soft, append):
+        if append:
+            self.fptr = open(lname,'a')
+        else:
+            self.fptr = open(lname,'w')
+            self.fptr.write(f'# nwalker = {nwalker}\n')
+            self.fptr.write(f'# nstore = {nstore}\n')
+            self.fptr.write(f'# dfile = {dfile}\n')
+            self.fptr.write(f'# soft = {soft}\n')
+            self.fptr.write(f'#\n')
+            model.write(self.fptr,'# ')
+            self.fptr.write("# Column names:\n")
 
-        # column names
-        cnames = model.vnames + ['lnpost','lnprior','chisq']
-        self.fptr.write(f"{' '.join(cnames)}\n")
+            # column names
+            cnames = model.vnames + ['lnpost','lnprior','chisq']
+            self.fptr.write(f"{' '.join(cnames)}\n")
 
     def add_line(self, values, fmt='.10e'):
         for val in values:
@@ -178,15 +192,18 @@ def mcmc(args=None):
     Carries out MCMC iterations of multi-sphere light curve model.
 
     This can (optionally) import a user-defined file which should
-    include two methods, "model_ok" and "model_adjust", and a
-    dictionary "model_ranges. "model_ok" and "model_adjust" both take
-    an seclipse.model.Model as their only input and both return True
-    or False depending on whether they run OK. "model_ok" checks that
-    the input model is valid; "model_adjust" alters fixed parameters
-    according to the variable parameters, e.g. to implement Kepler's
+    include three methods, "model_ok", "model_adjust" and
+    "model_prior" and a dictionary "model_ranges. "model_ok",
+    "model_adjust" and "model_prior" each take an seclipse.model.Model
+    as their only input. The first two both return True or False
+    depending on whether they run OK. "model_ok" checks that the input
+    model is valid; "model_adjust" alters fixed parameters according
+    to the variable parameters, e.g. to implement Kepler's
     laws. "model_ranges" looks like {'r1' : (0.1, 0.5), 'r2' : (0.5,
     1.5)} i.e. it's a dictionary specifying upper and lower limits for
-    each variable parameter for the model in question. 
+    each variable parameter for the model in question. "model_prior"
+    returns a float to add to whatever prior is there by default to
+    represent ln(prior) prob.
 
     Arguments::
 
@@ -202,7 +219,8 @@ def mcmc(args=None):
 
        olog : str
           old log file to initialise walkers. This will also define
-          the number of walkers. "none" to ignore.
+          the number of walkers. "none" to ignore. This file will be
+          appended to.
 
        nwalker : int [if olog == 'none']
           how many walkers per group. In this case, walkers are
@@ -230,8 +248,8 @@ def mcmc(args=None):
        stretch : float
           emcee stretch factor
 
-       log : str
-          log file to store results (can be old)
+       log : str if olog == 'none']
+          log file to store results
 
        best : str
           file to save best model encountered to.
@@ -278,7 +296,8 @@ def mcmc(args=None):
             sys.path.append(".")
             code = importlib.import_module(code)
             model = Dmodel(
-                mod, code.model_ok, code.model_adjust, code.model_ranges
+                mod, code.model_ok, code.model_adjust,
+                code.model_prior, code.model_ranges
             )
 
         if not model.adjust() or not model.ok(True):
@@ -309,10 +328,15 @@ def mcmc(args=None):
         )
         stretch = cl.get_value('stretch', 'stretch factor for emcee', 2.0, 1.1)
 
-        log = cl.get_value(
-            'log', 'MCMC log file',
-            cline.Fname('lc', '.log', exist=False)
-        )
+        if olog is None:
+            log = cl.get_value(
+                'log', 'MCMC log file',
+                cline.Fname('lc', '.log', exist=False)
+            )
+            append = False
+        else:
+            log = olog
+            append = True
 
         best = cl.get_value(
             'best', 'best light curve model',
@@ -353,7 +377,7 @@ def mcmc(args=None):
         walkers = np.empty((nwalker,len(cnames)),dtype=np.float64)
         for n, cname in enumerate(cnames):
             walkers[:,n] = tab[cname].astype(np.float64)
-        
+
     # Name & type the "blobs" (emcee terminology). Must match order
     # returned by Lnpost.__call__ (after the lnpost value)
     bdtype = [
@@ -362,7 +386,7 @@ def mcmc(args=None):
     lnpmax = -1.e30
 
     # Create log
-    logger = Logger(log, model, nwalker, nstore, data, soft)
+    logger = Logger(log, model, nwalker, nstore, data, soft, append)
 
     with Pool(nthreads) as pool:
 
