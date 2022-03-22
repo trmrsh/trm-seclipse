@@ -318,10 +318,13 @@ class Model(dict):
       limb3 : float
          linear limb darkening coeff of star 3
 
+      quad3 : float
+         quadratic limb darkening coeff of star 3
+
       limb4 : float
          linear limb darkening coeff of star 4
 
-      n1 : int)
+      n1 : int
          number of annuli over face of star 1
 
       n2 : int
@@ -828,6 +831,7 @@ class Model(dict):
             'limb1' : (0.01, 0., 1.),
             'limb2' : (0.01, 0., 1.),
             'limb3' : (0.01, 0., 1.),
+            'quad3' : (0.0, 0., 1.),
             'limb4' : (0.01, 0., 1.),
             'n1' : (0, 2, 1000),
             'n2' : (0, 2, 1000),
@@ -835,7 +839,7 @@ class Model(dict):
             'n4' : (0, 2, 1000),
             'ttype' : (0, 1, 2),
         },
-              
+
         'tdisc' :
             {'r1' : (0.02, 1.e-4, 20.),
              'r2' : (0.02, 1.e-4, 20.),
@@ -968,8 +972,8 @@ class Model(dict):
                             # Trap the model name
                             if elems[0] not in Model.PARAMS:
                                 raise Exception(
-                                    'Model type not recognised in line: {:s}'.format(line)
-                                    )
+                                    f'Model type not recognised in line: {line}'
+                                )
                             self.model = elems[0]
 
                         elif len(elems) == 2:
@@ -984,15 +988,15 @@ class Model(dict):
                                 self.pnames.append(name)
                             else:
                                 raise Exception(
-                                    'Must specify "f"=fixed or "v"=variable after all float parameters, line: {:s}'.format(line)
-                                    )
+                                    f'Must specify "f"=fixed or "v"=variable after all float parameters, line: {line}'
+                                )
                         elif len(elems) == 1:
                             self[name] = [int(elems[0]),False]
                             self.pnames.append(name)
                         else:
                             raise Exception(
-                                'Could not interpret line: {:s}'.format(line)
-                                )
+                                f'Could not interpret line: {line}'
+                            )
 
         elif isinstance(arg, OrderedDict):
             # Read in model from a dictionary (as may be created from an mcmc log file)
@@ -1003,8 +1007,8 @@ class Model(dict):
                     # Trap the model name
                     if elems[0] not in Model.PARAMS:
                         raise Exception(
-                            'Model type not recognised in line: {:s}'.format(elems[0])
-                            )
+                            f'Model type not recognised in line: {elems[0]}'
+                        )
                     self.model = elems[0]
 
                 elif len(elems) == 2:
@@ -1019,20 +1023,20 @@ class Model(dict):
                         self.pnames.append(name)
                     else:
                         raise Exception(
-                            'Must specify "f"=fixed or "v"=variable after all float parameters, line: {:s}'.format(line)
-                                    )
+                            f'Must specify "f"=fixed or "v"=variable after all float parameters, line: {line}'
+                        )
                 elif len(elems) == 1:
                     self[name] = [int(elems[0]),False]
                     self.pnames.append(name)
                 else:
                     raise Exception(
-                        'Could not interpret name / value: {:s} / {:s}'.format(name,value)
-                        )
+                        f'Could not interpret name / value: {name} / {value}'
+                    )
 
         else:
             raise Exception(
                 'Argument was not a string [filename] or a dictionary'
-                )
+            )
 
         # backwards compatibility
         if 'third' not in self.pnames:
@@ -1043,22 +1047,21 @@ class Model(dict):
         for pname in Model.PARAMS[self.model]:
             if pname not in self.pnames:
                 raise Exception(
-                    'Model = {:s} parameter = {:s} is undefined'.format(self.model, pname)
-                    )
+                    f'Model = {self.model} parameter = {pname} is undefined'
+                )
 
         # check that no unexpected parameters are defined
         for pname in self.pnames:
             if pname not in Model.PARAMS[self.model]:
                 raise Exception(
-                    f'Parameter = {pname} not recognised for'
-                    f' model = {self.model}'
+                    f'Parameter = {pname} not recognised for model = {self.model}'
                 )
 
     def paths(self, times):
-        """
-        Returns either 3x or 4x 3-element tuples containing x,y,z arrays
-        representing the positions of each star corresponding to the input
-        array of times.
+        """Returns either 3x or 4x 3-element tuples containing x,y,z arrays
+        representing the positions of each star corresponding to the
+        input array of times, corrected for LTT effects.
+
         """
 
         # Unit conversions:
@@ -1071,12 +1074,12 @@ class Model(dict):
             omegab2 = math.radians(self['omegab2'][0])
             OMEGAb1 = math.radians(self['OMEGAb1'][0])
             OMEGAb2 = math.radians(self['OMEGAb2'][0])
-            ib1     = math.radians(self['ib1'][0])
-            ib2     = math.radians(self['ib2'][0])
-            a1      = sol2au(self['a1'][0])
-            a2      = sol2au(self['a2'][0])
-            a3      = sol2au(self['a3'][0])
-            ab      = sol2au(self['ab'][0])
+            ib1 = math.radians(self['ib1'][0])
+            ib2 = math.radians(self['ib2'][0])
+            a1 = sol2au(self['a1'][0])
+            a2 = sol2au(self['a2'][0])
+            a3 = sol2au(self['a3'][0])
+            ab = sol2au(self['ab'][0])
 
             return orbits.model.triplePos(
                 times, a1, a2, a3, ab, self['eb1'][0],
@@ -1084,7 +1087,7 @@ class Model(dict):
                 self['Pb1'][0], self['Pb2'][0],
                 ib1, ib2, OMEGAb1, OMEGAb2,
                 self['t0b1'][0], self['t0b2'][0], self['ttype'][0],
-                )
+            )
 
         elif self.model == 'quad1' or self.model == 'quad2':
             omegab1 = math.radians(self['omegab1'][0])
@@ -1093,17 +1096,18 @@ class Model(dict):
             OMEGAb1 = math.radians(self['OMEGAb1'][0])
             OMEGAb2 = math.radians(self['OMEGAb2'][0])
             OMEGAb3 = math.radians(self['OMEGAb3'][0])
-            ib1     = math.radians(self['ib1'][0])
-            ib2     = math.radians(self['ib2'][0])
-            ib3     = math.radians(self['ib3'][0])
-            a1      = sol2au(self['a1'][0])
-            a2      = sol2au(self['a2'][0])
-            a3      = sol2au(self['a3'][0])
-            a4      = sol2au(self['a4'][0])
-            ab1     = sol2au(self['ab1'][0])
-            ab2     = sol2au(self['ab2'][0])
+            ib1 = math.radians(self['ib1'][0])
+            ib2 = math.radians(self['ib2'][0])
+            ib3 = math.radians(self['ib3'][0])
+            a1 = sol2au(self['a1'][0])
+            a2 = sol2au(self['a2'][0])
+            a3 = sol2au(self['a3'][0])
+            a4 = sol2au(self['a4'][0])
+            ab1 = sol2au(self['ab1'][0])
+            ab2 = sol2au(self['ab2'][0])
 
-            # the reversal of "quad1" and "quad2" here is unfortunate but correct
+            # the reversal of "quad1" and "quad2" here is unfortunate
+            # but correct
             if self.model == 'quad1':
                 return orbits.model.quad2Pos(
                     times, a1, a2, a3, a4, ab1, ab2, self['eb1'][0],
@@ -1127,12 +1131,12 @@ class Model(dict):
             omegab2 = math.radians(self['omegab2'][0])
             OMEGAb1 = math.radians(self['OMEGAb1'][0])
             OMEGAb2 = math.radians(self['OMEGAb2'][0])
-            ib1     = math.radians(self['ib1'][0])
-            ib2     = math.radians(self['ib2'][0])
-            a1      = sol2au(self['a1'][0])
-            a2      = sol2au(self['a2'][0])
-            adisc   = sol2au(self['adisc'][0])
-            ab      = sol2au(self['ab'][0])
+            ib1 = math.radians(self['ib1'][0])
+            ib2 = math.radians(self['ib2'][0])
+            a1 = sol2au(self['a1'][0])
+            a2 = sol2au(self['a2'][0])
+            adisc = sol2au(self['adisc'][0])
+            ab = sol2au(self['ab'][0])
 
             return orbits.model.triplePos(
                 times, a1, a2, adisc, ab, self['eb1'][0],
@@ -1140,12 +1144,12 @@ class Model(dict):
                 self['Pb1'][0], self['Pb2'][0],
                 ib1, ib2, OMEGAb1, OMEGAb2,
                 self['t0b1'][0], self['t0b2'][0], self['ttype'][0],
-                )
+            )
 
         else:
             raise Exception(
-                'Model = {:s} not recognised'.format(self.model)
-                )
+                f'Model = {self.model} not recognised'
+            )
 
     def prior(self):
         """
@@ -1226,7 +1230,7 @@ class Model(dict):
 
             limb1 = Limb(Limb.POLY, self['limb1'][0])
             limb2 = Limb(Limb.POLY, self['limb2'][0])
-            limb3 = Limb(Limb.POLY, self['limb3'][0])
+            limb3 = Limb(Limb.POLY, self['limb3'][0], self['quad3'][0])
 
             s1 = self['s1'][0]*(RSUN/AU)**2
             s2 = self['s2'][0]*(RSUN/AU)**2
@@ -1264,7 +1268,7 @@ class Model(dict):
         elif self.model == 'quad1' or self.model == 'quad2':
             limb1 = Limb(Limb.POLY, self['limb1'][0])
             limb2 = Limb(Limb.POLY, self['limb2'][0])
-            limb3 = Limb(Limb.POLY, self['limb3'][0])
+            limb3 = Limb(Limb.POLY, self['limb3'][0], self['quad3'][0])
             limb4 = Limb(Limb.POLY, self['limb4'][0])
 
             s1 = self['s1'][0]*(RSUN/AU)**2
@@ -1295,7 +1299,9 @@ class Model(dict):
             p1s, p2s, p3s, p4s = self.paths(tnew)
 
             # Calculate light curve
-            lnew = ring.lc4(r, rings, fluxes, tflux, s1, s2, s3, s4, p1s, p2s, p3s, p4s)
+            lnew = ring.lc4(
+                r, rings, fluxes, tflux, s1, s2, s3, s4, p1s, p2s, p3s, p4s
+            )
             lc = compress(lnew, nds)
 
             # add "third" light

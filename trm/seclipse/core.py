@@ -238,20 +238,20 @@ class Limb (object):
 
         Arguments::
 
-          ltype : (int)
+          ltype : int
               either Limb.POLY or Limb.CLARET to indicate type of limb
               darkening
 
-          a1    : (float)
+          a1 : float
               first coeffient
 
-          a2    : (float)
+          a2 : float
               second coeffient
 
-          a3    : (float)
+          a3 : float
               third coeffient
 
-          a4    : (float)
+          a4 : float
               fourth coeffient
         """
         if ltype != Limb.POLY and ltype != Limb.CLARET:
@@ -271,7 +271,7 @@ class Limb (object):
     def __call__(self, mu):
         ommu = 1.-mu
         im   = 1.
-        a1, a2, a3, a4 =self.a1, self.a2, self.a3, self.a4
+        a1, a2, a3, a4 = self.a1, self.a2, self.a3, self.a4
         if self.ltype == Limb.POLY:
             im -= ne.evaluate('ommu*(a1+ommu*(a2+ommu*(a3+ommu*a4)))')
         elif self.ltype == Limb.CLARET:
