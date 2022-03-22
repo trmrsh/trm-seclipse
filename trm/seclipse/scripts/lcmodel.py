@@ -105,7 +105,7 @@ def lcmodel(args=None):
 
         plt.plot(ts,fs,'.g')
         plt.plot(ts,fit,'r')
-        plt.xlabel('Time [MJD]')
+        plt.xlabel('Time (days)')
         plt.ylabel('Flux')
         plt.show()
 
@@ -121,7 +121,7 @@ def lcmodel(args=None):
 
         # plot
         plt.plot(ts,fit,'b')
-        plt.xlabel('Time [MJD - 58600]')
+        plt.xlabel('Time (days)')
         plt.ylabel('Flux')
         plt.show()
 
