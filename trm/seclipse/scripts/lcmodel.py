@@ -103,7 +103,7 @@ def lcmodel(args=None):
         # rather specific time offset applied
         #ts += 2454833 - 2400000 - 57240
 
-        plt.plot(ts,fs,'.g')
+        plt.errorbar(ts,fs,fes,fmt='.g',ecolor='0.8')
         plt.plot(ts,fit,'r')
         plt.xlabel('Time (days)')
         plt.ylabel('Flux')
